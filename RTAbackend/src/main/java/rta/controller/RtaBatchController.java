@@ -67,15 +67,13 @@ public class RtaBatchController {
             String uploadDir = "uploads/";
             Files.createDirectories(Paths.get(uploadDir));
 
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            String newFileName = (merchantId != null ? merchantId : "UNKNOWN") + "_" + timestamp + "." + extension;
-            Path path = Paths.get(uploadDir + newFileName);
+            Path path = Paths.get(uploadDir + originalFilename);
 
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
             RtaBatch batch = new RtaBatch();
             batch.setOriginalFileName(originalFilename);
-            batch.setFileName(newFileName);
+            batch.setFileName(originalFilename);
             batch.setMerchantId(merchantId != null ? merchantId : "UNKNOWN");
             batch.setCreatedAt(LocalDateTime.now());
             batch.setCreatedBy("system");

@@ -24,10 +24,11 @@ public class SecurityConfig {
                     return config;
                 }))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(
                                 "/api/profile/**",
-                                "/api/auth/**",
                                 "/api/batches/**",
+                                "/uploads/**",
                                 "/h2-console/**")
                         .permitAll()
                         .anyRequest().authenticated())
