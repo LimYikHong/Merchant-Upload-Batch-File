@@ -25,7 +25,6 @@ public class RtaBatchController {
 
     private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
-
     private final List<String> activityLog = new ArrayList<>();
 
     public RtaBatchController(RtaBatchRepository batchRepository,
@@ -59,8 +58,8 @@ public class RtaBatchController {
             }
 
             String lowerName = fileName.toLowerCase();
-            if (!(lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls") ||
-                    lowerName.endsWith(".csv") || lowerName.endsWith(".txt"))) {
+            if (!(lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")
+                    || lowerName.endsWith(".csv") || lowerName.endsWith(".txt"))) {
                 return ResponseEntity.badRequest()
                         .body("Invalid file type. Only .xlsx, .xls, .csv, and .txt are allowed.");
             }
@@ -192,10 +191,28 @@ public class RtaBatchController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBatch(@PathVariable Long id) {
         return batchRepository.findById(id).map(batch -> {
-            transactionRepository.deleteAll(transactionRepository.findByBatchId(id));
-            batchRepository.delete(batch);
-            activityLog.add("Batch ID " + id + " deleted.");
-            return ResponseEntity.ok().body(Map.of("message", "Batch deleted successfully"));
+            try {
+                List<RtaTransaction> transactions = transactionRepository.findByBatchId(id);
+                if (!transactions.isEmpty()) {
+                    transactionRepository.deleteAll(transactions);
+                    activityLog.add("Deleted " + transactions.size() + " transactions for batch " + id);
+                }
+
+                Path filePath = Paths.get("uploads/" + batch.getFileName());
+                if (Files.exists(filePath)) {
+                    Files.delete(filePath);
+                    activityLog.add("Deleted file: " + filePath.getFileName());
+                }
+
+                batchRepository.delete(batch);
+                activityLog.add("Batch ID " + id + " deleted.");
+
+                return ResponseEntity.ok(Map.of("message", "Batch and related records deleted successfully"));
+            } catch (IOException e) {
+                activityLog.add("File deletion failed for batch " + id + ": " + e.getMessage());
+                return ResponseEntity.internalServerError()
+                        .body(Map.of("error", "Batch deleted from DB, but file removal failed"));
+            }
         }).orElse(ResponseEntity.notFound().build());
     }
 }
