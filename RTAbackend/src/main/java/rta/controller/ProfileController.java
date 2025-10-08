@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import rta.model.MerchantProfile;
 import rta.repository.ProfileRepository;
 import rta.service.ProfileService;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -75,7 +76,7 @@ public class ProfileController {
             profile.setCompany("Tan Supplies Trading");
             profile.setContact("+60 12-345 6789");
             profile.setAddress("32A, Jalan SS15/4, Subang Jaya, Selangor");
-            profile.setJoinedOn("2024-03-15");
+            profile.setJoinedOn(LocalDateTime.now());
             profileRepository.save(profile);
         }
     }

@@ -18,6 +18,9 @@ public class RtaBatch {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
+    @Column(name = "original_file_name")
+    private String originalFileName;
+
     @Column(name = "merchant_id", nullable = false)
     private String merchantId;
 

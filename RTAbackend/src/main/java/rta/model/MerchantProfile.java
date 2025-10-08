@@ -1,34 +1,38 @@
 package rta.model;
 
+import lombok.Data;
 import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "profiles")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "merchant_profile")
 public class MerchantProfile {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "merchant_id")
+    @Column(name = "merchant_id", nullable = false, unique = true)
     private String merchantId;
 
+    @Column(nullable = false)
     private String name;
-    private String email;
-    private String company;
-    private String contact;
-    private String address;
-    private String joinedOn;
 
-    @Column(name = "username", nullable = false)
+    private String address;
+
+    private String phone;
+
+    private String email;
+
+    private String password;
+
     private String username;
 
-    @Column(name = "password")
-    private String password;
+    private String company;
+
+    private String contact;
+
+    private LocalDateTime joinedOn;
 
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;

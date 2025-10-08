@@ -3,6 +3,7 @@ package rta.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import rta.entity.RtaBatch;
 import rta.entity.RtaTransaction;
 import rta.repository.RtaBatchRepository;
@@ -11,7 +12,10 @@ import rta.repository.RtaTransactionRepository;
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.file.*;
+import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import org.apache.commons.io.FilenameUtils;
+
 import java.util.*;
 
 import org.apache.poi.ss.usermodel.*;
@@ -51,22 +55,36 @@ public class RtaBatchController {
                 return ResponseEntity.badRequest().body("❌ No file uploaded");
             }
 
+            String originalFilename = file.getOriginalFilename();
+            String extension = FilenameUtils.getExtension(originalFilename);
+            List<String> supportedExtensions = Arrays.asList("csv", "txt", "xlsx");
+
+            if (!supportedExtensions.contains(extension.toLowerCase())) {
+                return ResponseEntity.badRequest()
+                        .body("Unsupported file type. Please upload .csv, .txt, or .xlsx files.");
+            }
+
             String uploadDir = "uploads/";
             Files.createDirectories(Paths.get(uploadDir));
-            Path path = Paths.get(uploadDir + file.getOriginalFilename());
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String newFileName = (merchantId != null ? merchantId : "UNKNOWN") + "_" + timestamp + "." + extension;
+            Path path = Paths.get(uploadDir + newFileName);
+
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
             RtaBatch batch = new RtaBatch();
-            batch.setFileName(file.getOriginalFilename());
+            batch.setOriginalFileName(originalFilename);
+            batch.setFileName(newFileName);
             batch.setMerchantId(merchantId != null ? merchantId : "UNKNOWN");
             batch.setCreatedAt(LocalDateTime.now());
             batch.setCreatedBy("system");
             batch.setStatus("UPLOADED");
             batchRepository.save(batch);
 
-            String fileName = file.getOriginalFilename().toLowerCase();
+            String fileName = originalFilename.toLowerCase();
 
-            if (fileName.endsWith(".csv")) {
+            if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
                 processCsvFile(batch, path.toFile());
             } else if (fileName.endsWith(".xlsx")) {
                 processExcelFile(batch, path.toFile());
@@ -80,7 +98,7 @@ public class RtaBatchController {
             activityLog.add("✅ Upload success: " + fileName + " by " + merchantId);
             return ResponseEntity.ok(Map.of(
                     "message", "Upload successful",
-                    "fileName", file.getOriginalFilename(),
+                    "fileName", originalFilename,
                     "status", "READY"));
 
         } catch (Exception e) {
