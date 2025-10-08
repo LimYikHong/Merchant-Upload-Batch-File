@@ -12,10 +12,7 @@ import rta.repository.RtaTransactionRepository;
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.file.*;
-import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
-import org.apache.commons.io.FilenameUtils;
-
 import java.util.*;
 
 import org.apache.poi.ss.usermodel.*;
@@ -49,58 +46,55 @@ public class RtaBatchController {
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadBatch(@RequestParam("file") MultipartFile file,
-            @RequestParam(value = "merchantId", required = false) String merchantId) {
+            @RequestParam("merchantId") String merchantId,
+            @RequestParam("originalFileName") String originalFileName) {
         try {
             if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body("❌ No file uploaded");
+                return ResponseEntity.badRequest().body("No file uploaded");
             }
 
-            String originalFilename = file.getOriginalFilename();
-            String extension = FilenameUtils.getExtension(originalFilename);
-            List<String> supportedExtensions = Arrays.asList("csv", "txt", "xlsx");
+            String fileName = file.getOriginalFilename();
+            if (fileName == null) {
+                return ResponseEntity.badRequest().body("Invalid file name");
+            }
 
-            if (!supportedExtensions.contains(extension.toLowerCase())) {
+            String lowerName = fileName.toLowerCase();
+            if (!(lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls") ||
+                    lowerName.endsWith(".csv") || lowerName.endsWith(".txt"))) {
                 return ResponseEntity.badRequest()
-                        .body("Unsupported file type. Please upload .csv, .txt, or .xlsx files.");
+                        .body("Invalid file type. Only .xlsx, .xls, .csv, and .txt are allowed.");
+            }
+
+            String contentType = file.getContentType();
+            if (contentType == null ||
+                    !(contentType.equals("application/vnd.ms-excel") ||
+                            contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
+                            contentType.equals("text/plain") ||
+                            contentType.equals("text/csv"))) {
+                return ResponseEntity.badRequest()
+                        .body("Invalid content type: " + contentType);
             }
 
             String uploadDir = "uploads/";
             Files.createDirectories(Paths.get(uploadDir));
-
-            Path path = Paths.get(uploadDir + originalFilename);
-
+            Path path = Paths.get(uploadDir + fileName);
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
             RtaBatch batch = new RtaBatch();
-            batch.setOriginalFileName(originalFilename);
-            batch.setFileName(originalFilename);
-            batch.setMerchantId(merchantId != null ? merchantId : "UNKNOWN");
+            batch.setOriginalFileName(originalFileName);
+            batch.setFileName(fileName);
+            batch.setMerchantId(merchantId);
             batch.setCreatedAt(LocalDateTime.now());
             batch.setCreatedBy("system");
             batch.setStatus("UPLOADED");
-            batchRepository.save(batch);
+            RtaBatch savedBatch = batchRepository.save(batch);
 
-            String fileName = originalFilename.toLowerCase();
+            activityLog.add("Uploaded: " + fileName + " by " + merchantId);
 
-            if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
-                processCsvFile(batch, path.toFile());
-            } else if (fileName.endsWith(".xlsx")) {
-                processExcelFile(batch, path.toFile());
-            } else {
-                batch.setStatus("UNSUPPORTED");
-                batchRepository.save(batch);
-                activityLog.add("❌ Unsupported file type: " + fileName);
-                return ResponseEntity.badRequest().body("Unsupported file type");
-            }
-
-            activityLog.add("✅ Upload success: " + fileName + " by " + merchantId);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Upload successful",
-                    "fileName", originalFilename,
-                    "status", "READY"));
+            return ResponseEntity.ok(savedBatch);
 
         } catch (Exception e) {
-            activityLog.add("❌ Upload failed: " + e.getMessage());
+            activityLog.add("Upload failed: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error during upload: " + e.getMessage());
         }
@@ -130,11 +124,11 @@ public class RtaBatchController {
             }
             batch.setStatus("READY");
             batchRepository.save(batch);
-            activityLog.add("📄 Processed CSV: " + file.getName() + " (" + success + " records)");
+            activityLog.add("Processed CSV: " + file.getName() + " (" + success + " records)");
         } catch (Exception e) {
             batch.setStatus("FAILED");
             batchRepository.save(batch);
-            activityLog.add("❌ CSV processing failed for " + file.getName() + ": " + e.getMessage());
+            activityLog.add("CSV processing failed for " + file.getName() + ": " + e.getMessage());
         }
     }
 
@@ -147,7 +141,7 @@ public class RtaBatchController {
 
             for (Row row : sheet) {
                 if (row.getRowNum() == 0)
-                    continue; // Skip header
+                    continue;
 
                 Cell accCell = row.getCell(0);
                 Cell amtCell = row.getCell(1);
@@ -172,12 +166,12 @@ public class RtaBatchController {
 
             batch.setStatus("READY");
             batchRepository.save(batch);
-            activityLog.add("📊 Processed Excel: " + file.getName() + " (" + success + " records)");
+            activityLog.add("Processed Excel: " + file.getName() + " (" + success + " records)");
 
         } catch (Exception e) {
             batch.setStatus("FAILED");
             batchRepository.save(batch);
-            activityLog.add("❌ Excel processing failed for " + file.getName() + ": " + e.getMessage());
+            activityLog.add("Excel processing failed for " + file.getName() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -190,7 +184,7 @@ public class RtaBatchController {
             if (batchDetails.getStatus() != null)
                 batch.setStatus(batchDetails.getStatus());
             RtaBatch updated = batchRepository.save(batch);
-            activityLog.add("✏️ Updated batch ID " + id);
+            activityLog.add("Updated batch ID " + id);
             return ResponseEntity.ok(updated);
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -200,7 +194,7 @@ public class RtaBatchController {
         return batchRepository.findById(id).map(batch -> {
             transactionRepository.deleteAll(transactionRepository.findByBatchId(id));
             batchRepository.delete(batch);
-            activityLog.add("🗑️ Batch ID " + id + " deleted.");
+            activityLog.add("Batch ID " + id + " deleted.");
             return ResponseEntity.ok().body(Map.of("message", "Batch deleted successfully"));
         }).orElse(ResponseEntity.notFound().build());
     }
