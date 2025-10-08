@@ -29,4 +29,7 @@ public class MerchantProfile {
 
     @Column(name = "password")
     private String password;
+
+    @Column(name = "profile_photo_url")
+    private String profilePhotoUrl;
 }

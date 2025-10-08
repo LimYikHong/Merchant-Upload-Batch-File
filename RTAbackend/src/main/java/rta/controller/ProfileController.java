@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import rta.model.MerchantProfile;
 import rta.repository.ProfileRepository;
 import rta.service.ProfileService;
@@ -47,6 +48,14 @@ public class ProfileController {
             @RequestBody MerchantProfile updatedProfile) {
         MerchantProfile updated = profileService.updateProfile(merchantId, updatedProfile);
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{merchantId}/photo")
+    public ResponseEntity<MerchantProfile> uploadProfilePhoto(
+            @PathVariable String merchantId,
+            @RequestParam("profilePhoto") MultipartFile file) {
+        MerchantProfile updatedProfile = profileService.uploadProfilePhoto(merchantId, file);
+        return ResponseEntity.ok(updatedProfile);
     }
 
     @PostConstruct
