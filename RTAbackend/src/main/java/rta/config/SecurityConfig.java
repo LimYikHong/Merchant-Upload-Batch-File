@@ -14,6 +14,15 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+
+/**
+ * SecurityFilterChain
+ * - Disables CSRF (API-style, stateless) and form/basic login.
+ * - Enables CORS (configured below).
+ * - Uses STATELESS sessions for token/JWT-friendly APIs.
+ * - Currently permits ALL endpoints (including /api/profile/** and
+ * /api/batches/**).
+ */
 public class SecurityConfig {
 
     @Bean
@@ -30,6 +39,14 @@ public class SecurityConfig {
                 .formLogin(f -> f.disable());
         return http.build();
     }
+
+    /**
+     * CORS configuration
+     * - Allows the Angular dev origin (http://localhost:4200).
+     * - Permits common HTTP methods and headers (including Authorization for future
+     * JWT use).
+     * - Credentials enabled for cases like cookies or auth headers (if needed).
+     */
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

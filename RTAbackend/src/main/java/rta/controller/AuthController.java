@@ -16,6 +16,13 @@ public class AuthController {
         this.profileService = profileService;
     }
 
+    /**
+     * POST /api/auth/login
+     * - Accepts a simple body with username/password (using MerchantProfile as a
+     * DTO here).
+     * - Delegates to ProfileService.login(...) for credential checking.
+     * - Returns 200 + user profile on success, or 401 on invalid credentials.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody MerchantProfile credentials) {
         MerchantProfile user = profileService.login(credentials.getUsername(), credentials.getPassword());

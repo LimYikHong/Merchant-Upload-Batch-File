@@ -33,16 +33,31 @@ public class RtaBatchController {
         this.transactionRepository = transactionRepository;
     }
 
+    /**
+     * GET /api/batches
+     * - Returns all batches.
+     */
     @GetMapping
     public List<RtaBatch> getAllBatches() {
         return batchRepository.findAll();
     }
 
+    /**
+     * GET /api/batches/activity
+     * - Returns simple activity messages accumulated during controller operations.
+     * (Memory-only; resets on restart)
+     */
     @GetMapping("/activity")
     public List<String> getActivityLog() {
         return activityLog;
     }
 
+    /**
+     * POST /api/batches/upload
+     * - Validates file type + content type.
+     * - Saves the uploaded file under /uploads.
+     * - Creates a batch record with status=UPLOADED.
+     */
     @PostMapping("/upload")
     public ResponseEntity<?> uploadBatch(@RequestParam("file") MultipartFile file,
             @RequestParam("merchantId") String merchantId,
@@ -99,6 +114,10 @@ public class RtaBatchController {
         }
     }
 
+    /**
+     * Helper: parse CSV into transactions, set batch to READY/FAILED.
+     * - Expected columns: accountNumber, amount, currency
+     */
     private void processCsvFile(RtaBatch batch, File file) {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
@@ -131,6 +150,13 @@ public class RtaBatchController {
         }
     }
 
+    /**
+     * Helper: parse first sheet of XLSX into transactions, set batch to
+     * READY/FAILED.
+     * - Assumes first row is header; skips it.
+     * - Expected columns: [0]=accountNumber (string), [1]=amount (numeric),
+     * [2]=currency (string).
+     */
     private void processExcelFile(RtaBatch batch, File file) {
         try (InputStream fis = new FileInputStream(file);
                 Workbook workbook = new XSSFWorkbook(fis)) {
@@ -175,6 +201,10 @@ public class RtaBatchController {
         }
     }
 
+    /**
+     * PUT /api/batches/{id}
+     * - Updates batch fields (currently merchantId/status).
+     */
     @PutMapping("/{id}")
     public ResponseEntity<RtaBatch> updateBatch(@PathVariable Long id, @RequestBody RtaBatch batchDetails) {
         return batchRepository.findById(id).map(batch -> {
@@ -188,6 +218,13 @@ public class RtaBatchController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * DELETE /api/batches/{id}
+     * - Deletes related transactions, the file on disk (if present), and the batch
+     * record itself.
+     * - Returns success JSON or an error message if file deletion fails after DB
+     * delete.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBatch(@PathVariable Long id) {
         return batchRepository.findById(id).map(batch -> {

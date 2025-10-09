@@ -20,10 +20,20 @@ public class ProfileController {
     private final ProfileService profileService;
     private final ProfileRepository profileRepository;
 
+    /**
+     * POST /api/profile/register
+     * - Creates a new merchant profile (demo registration endpoint).
+     */
     @PostMapping("/register")
     public ResponseEntity<MerchantProfile> register(@RequestBody MerchantProfile profile) {
         return ResponseEntity.ok(profileService.register(profile));
     }
+
+    /**
+     * POST /api/profile/login
+     * - Simple login that delegates to ProfileService.
+     * - Returns 200 with profile on success; 401 with message on failure.
+     */
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody MerchantProfile credentials) {
@@ -37,12 +47,20 @@ public class ProfileController {
         }
     }
 
+    /**
+     * GET /api/profile/{merchantId}
+     * - Fetches a merchant profile by merchantId.
+     */
     @GetMapping("/{merchantId}")
     public ResponseEntity<MerchantProfile> getProfile(@PathVariable String merchantId) {
         MerchantProfile profile = profileService.getProfile(merchantId);
         return ResponseEntity.ok(profile);
     }
 
+    /**
+     * PUT /api/profile/{merchantId}
+     * - Updates profile fields (company/contact/address/etc).
+     */
     @PutMapping("/{merchantId}")
     public ResponseEntity<MerchantProfile> updateProfile(
             @PathVariable String merchantId,
@@ -51,6 +69,11 @@ public class ProfileController {
         return ResponseEntity.ok(updated);
     }
 
+    /**
+     * POST /api/profile/{merchantId}/photo
+     * - Uploads a profile photo (multipart/form-data).
+     * - Returns the updated profile including new photo URL/path.
+     */
     @PostMapping("/{merchantId}/photo")
     public ResponseEntity<MerchantProfile> uploadProfilePhoto(
             @PathVariable String merchantId,

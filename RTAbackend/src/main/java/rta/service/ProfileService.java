@@ -13,6 +13,12 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
+
+/**
+ * ProfileService
+ * - Handles merchant authentication and profile CRUD.
+ * - Stores profile photos on local disk and saves public URL path in DB.
+ */
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
@@ -21,6 +27,10 @@ public class ProfileService {
         this.profileRepository = profileRepository;
     }
 
+    /**
+     * Authenticate by username/password.
+     * - Throws RuntimeException on user not found or invalid password.
+     */
     public MerchantProfile login(String username, String password) {
         MerchantProfile profile = profileRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -32,6 +42,10 @@ public class ProfileService {
         return profile;
     }
 
+    /**
+     * Register a new merchant profile.
+     * - Rejects duplicate usernames.
+     */
     public MerchantProfile register(MerchantProfile profile) {
         if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
@@ -39,11 +53,19 @@ public class ProfileService {
         return profileRepository.save(profile);
     }
 
+    /**
+     * Fetch profile by merchantId.
+     * - Throws if not found.
+     */
     public MerchantProfile getProfile(String merchantId) {
         return profileRepository.findByMerchantId(merchantId)
                 .orElseThrow(() -> new RuntimeException("Merchant profile not found: " + merchantId));
     }
 
+    /**
+     * Update mutable profile fields.
+     * - Copies selected fields from newProfile to existing record.
+     */
     public MerchantProfile updateProfile(String merchantId, MerchantProfile newProfile) {
         MerchantProfile existing = profileRepository.findByMerchantId(merchantId)
                 .orElseThrow(() -> new RuntimeException("Merchant profile not found: " + merchantId));
@@ -57,6 +79,11 @@ public class ProfileService {
         return profileRepository.save(existing);
     }
 
+    /**
+     * Save profile photo to disk and update profile with a public URL.
+     * - Writes under "uploads/profile-photos" (relative to app working dir).
+     * - Stores "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
+     */
     public MerchantProfile uploadProfilePhoto(String merchantId, MultipartFile file) {
         MerchantProfile profile = getProfile(merchantId);
 
