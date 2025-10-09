@@ -85,10 +85,10 @@ Default test account:
 - **Username:** merchant1  
 - **Password:** 123456  
 
-After login, you can:
-- Upload `.xlsx`, `.csv`, or `.txt` batch files  
-- View uploaded batches and logs  
-- Edit merchant profile information  
+After login, you can (CRUD implementation):
+- Upload `.xlsx`, `.csv`, or `.txt` batch files  and delete uploaded bacth file (Create and Delete)
+- View uploaded batches and logs  (Read)
+- Edit merchant profile information  (Update)
 
 ---
 
