@@ -50,47 +50,57 @@ export class ProfileService {
     );
   }
 
-    /**
+  /**
    * PUT /api/profile/{merchantId}
    * - Sends updated profile to server
    * - On success: refresh cache + return updated profile
    * - On error: propagate error to the caller (form can show message)
    */
 
-  updateProfile(merchantId: string, updatedProfile: MerchantProfile): Observable<MerchantProfile> {
-    return this.http.put<MerchantProfile>(`${this.apiUrl}/${merchantId}`, updatedProfile).pipe(
-      tap((profile) => {
-        this.setProfile(profile);
-        console.log('✅ Profile updated successfully');
-      }),
-      catchError((err) => {
-        console.error('❌ Failed to update profile:', err);
-        return throwError(() => err);
-      })
-    );
+  updateProfile(
+    merchantId: string,
+    updatedProfile: MerchantProfile
+  ): Observable<MerchantProfile> {
+    return this.http
+      .put<MerchantProfile>(`${this.apiUrl}/${merchantId}`, updatedProfile)
+      .pipe(
+        tap((profile) => {
+          this.setProfile(profile);
+          console.log('Profile updated successfully');
+        }),
+        catchError((err) => {
+          console.error('Failed to update profile:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
-    /**
+  /**
    * POST /api/profile/{merchantId}/photo
    * - Uploads a profile photo via multipart/form-data
    * - On success: cache refreshed profile returned by backend
    * - On error: propagate error to the caller
    */
 
-  uploadProfilePhoto(merchantId: string, file: File): Observable<MerchantProfile> {
+  uploadProfilePhoto(
+    merchantId: string,
+    file: File
+  ): Observable<MerchantProfile> {
     const formData = new FormData();
     formData.append('profilePhoto', file);
 
-    return this.http.post<MerchantProfile>(`${this.apiUrl}/${merchantId}/photo`, formData).pipe(
-      tap((profile) => {
-        this.setProfile(profile);
-        console.log('✅ Photo uploaded successfully');
-      }),
-      catchError((err) => {
-        console.error('❌ Failed to upload photo:', err);
-        return throwError(() => err);
-      })
-    );
+    return this.http
+      .post<MerchantProfile>(`${this.apiUrl}/${merchantId}/photo`, formData)
+      .pipe(
+        tap((profile) => {
+          this.setProfile(profile);
+          console.log('Photo uploaded successfully');
+        }),
+        catchError((err) => {
+          console.error('Failed to upload photo:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   setProfile(profile: MerchantProfile): void {
@@ -98,15 +108,19 @@ export class ProfileService {
     localStorage.setItem('merchantProfile', JSON.stringify(profile));
   }
 
-getProfile(): MerchantProfile {
-  return this.cachedProfile ?? this.emptyProfile();
-}
-
+  getProfile(): MerchantProfile {
+    return this.cachedProfile ?? this.emptyProfile();
+  }
 
   clearProfile(): void {
     this.cachedProfile = null;
     localStorage.removeItem('merchantProfile');
   }
+
+  /**
+   * emptyProfile
+   * - Returns a safe, UI-friendly empty profile object to avoid null checks.
+   */
 
   private emptyProfile(): MerchantProfile {
     return {

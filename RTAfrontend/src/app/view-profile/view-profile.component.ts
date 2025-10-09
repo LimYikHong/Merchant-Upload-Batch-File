@@ -6,6 +6,13 @@ import { ProfileService, MerchantProfile } from '../services/profile.service';
 
 declare var bootstrap: any;
 
+/**
+ * ViewProfileComponent
+ * - Displays the current merchant profile
+ * - Allows inline editing via Bootstrap modal (company/contact/address)
+ * - Supports profile photo selection + preview + upload
+ * - Demonstrates: standalone component, @ViewChild, template-driven forms, service calls
+ */
 @Component({
   selector: 'app-view-profile',
   standalone: true,
@@ -348,6 +355,11 @@ export class ViewProfileComponent implements OnInit {
     this.profile = this.profileService.getProfile();
   }
 
+    /**
+   * Optionally re-fetch profile from backend (useful if opening page directly)
+   * - On success: update both local state and service cache
+   */
+
   loadProfile(merchantId: string): void {
     this.profileService.fetchProfile(merchantId).subscribe({
       next: (data) => {
@@ -355,7 +367,7 @@ export class ViewProfileComponent implements OnInit {
         this.profileService.setProfile(data);
       },
       error: (err) => {
-        console.error('❌ Failed to load profile:', err);
+        console.error('Failed to load profile:', err);
         alert('Failed to fetch profile data from server.');
       },
     });
@@ -364,6 +376,13 @@ export class ViewProfileComponent implements OnInit {
   openPhotoUpload() {
     this.fileInput.nativeElement.click();
   }
+
+    /**
+   * Handles <input type="file"> change:
+   * - Stores the File
+   * - Generates a base64 preview
+   * - Opens the edit modal automatically for convenience
+   */
 
   onFileSelected(event: any) {
     const file = event.target.files[0];
@@ -376,6 +395,10 @@ export class ViewProfileComponent implements OnInit {
     }
   }
 
+    /**
+   * Opens the Bootstrap modal and pre-fills editData with the current profile
+   */
+
   openEditModal(): void {
     if (!this.profile) return;
     this.editData = { ...this.profile };
@@ -384,6 +407,11 @@ export class ViewProfileComponent implements OnInit {
     modal.show();
   }
 
+    /**
+   * Saves profile fields:
+   * - First updates textual fields (company/contact/address)
+   * - If a new photo is selected, chains the upload and then closes the modal
+   */
   updateProfile(): void {
     if (!this.editData) return;
 
@@ -399,16 +427,20 @@ export class ViewProfileComponent implements OnInit {
             const modalEl = document.getElementById('editProfileModal');
             const modal = bootstrap.Modal.getInstance(modalEl!);
             modal.hide();
-            alert('✅ Profile updated successfully!');
+            alert('Profile updated successfully!');
           }
         },
         error: (err: any) => {
-          console.error('❌ Update failed:', err);
+          console.error('Update failed:', err);
           alert('Failed to update profile!');
         },
       });
   }
-
+  
+    /**
+   * Uploads the selected profile photo (multipart/form-data)
+   * - On success: refreshes local state/cache, resets preview, closes modal
+   */
   uploadPhoto(merchantId: string): void {
     if (!this.selectedFile) return;
 
@@ -421,10 +453,10 @@ export class ViewProfileComponent implements OnInit {
         const modalEl = document.getElementById('editProfileModal');
         const modal = bootstrap.Modal.getInstance(modalEl!);
         modal.hide();
-        alert('✅ Profile updated successfully!');
+        alert('Profile updated successfully!');
       },
       error: (err: any) => {
-        console.error('❌ Photo upload failed:', err);
+        console.error(' Photo upload failed:', err);
         alert('Failed to upload photo!');
       },
     });
