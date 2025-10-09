@@ -44,7 +44,7 @@ export class ProfileService {
     return this.http.get<MerchantProfile>(`${this.apiUrl}/${merchantId}`).pipe(
       tap((profile) => this.setProfile(profile)),
       catchError((err) => {
-        console.error('❌ Failed to fetch profile:', err);
+        console.error('Failed to fetch profile:', err);
         return of(this.emptyProfile());
       })
     );

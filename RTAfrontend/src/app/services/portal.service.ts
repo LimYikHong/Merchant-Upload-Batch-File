@@ -17,7 +17,7 @@ export interface RtaBatch {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 
 /**
@@ -42,7 +42,11 @@ export class PortalService {
    * - Includes merchantId and original file name for audit trail.
    * - Returns the created RtaBatch metadata from backend.
    */
-  uploadBatch(file: File, merchantId: string, originalFileName: string): Observable<RtaBatch> {
+  uploadBatch(
+    file: File,
+    merchantId: string,
+    originalFileName: string
+  ): Observable<RtaBatch> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('merchantId', merchantId);
@@ -55,7 +59,11 @@ export class PortalService {
    * - Expects plain text response (status/summary).
    */
   processBatch(id: number): Observable<string> {
-    return this.http.post(`${this.apiUrl}/${id}/process`, {}, { responseType: 'text' });
+    return this.http.post(
+      `${this.apiUrl}/${id}/process`,
+      {},
+      { responseType: 'text' }
+    );
   }
   /**
    * DELETE /api/batches/{id}

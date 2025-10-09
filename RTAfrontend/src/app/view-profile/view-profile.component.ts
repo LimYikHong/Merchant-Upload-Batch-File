@@ -57,7 +57,9 @@ declare var bootstrap: any;
           <div class="header-info">
             <h1>{{ profile.name }}</h1>
             <p class="email">{{ profile.email }}</p>
-            <button class="edit-btn" (click)="openEditModal()">Edit Profile</button>
+            <button class="edit-btn" (click)="openEditModal()">
+              Edit Profile
+            </button>
           </div>
         </div>
 
@@ -355,7 +357,7 @@ export class ViewProfileComponent implements OnInit {
     this.profile = this.profileService.getProfile();
   }
 
-    /**
+  /**
    * Optionally re-fetch profile from backend (useful if opening page directly)
    * - On success: update both local state and service cache
    */
@@ -377,7 +379,7 @@ export class ViewProfileComponent implements OnInit {
     this.fileInput.nativeElement.click();
   }
 
-    /**
+  /**
    * Handles <input type="file"> change:
    * - Stores the File
    * - Generates a base64 preview
@@ -395,7 +397,7 @@ export class ViewProfileComponent implements OnInit {
     }
   }
 
-    /**
+  /**
    * Opens the Bootstrap modal and pre-fills editData with the current profile
    */
 
@@ -407,7 +409,7 @@ export class ViewProfileComponent implements OnInit {
     modal.show();
   }
 
-    /**
+  /**
    * Saves profile fields:
    * - First updates textual fields (company/contact/address)
    * - If a new photo is selected, chains the upload and then closes the modal
@@ -436,29 +438,31 @@ export class ViewProfileComponent implements OnInit {
         },
       });
   }
-  
-    /**
+
+  /**
    * Uploads the selected profile photo (multipart/form-data)
    * - On success: refreshes local state/cache, resets preview, closes modal
    */
   uploadPhoto(merchantId: string): void {
     if (!this.selectedFile) return;
 
-    this.profileService.uploadProfilePhoto(merchantId, this.selectedFile).subscribe({
-      next: (res: MerchantProfile) => {
-        this.profile = res;
-        this.profileService.setProfile(res);
-        this.selectedFile = null;
-        this.previewUrl = null;
-        const modalEl = document.getElementById('editProfileModal');
-        const modal = bootstrap.Modal.getInstance(modalEl!);
-        modal.hide();
-        alert('Profile updated successfully!');
-      },
-      error: (err: any) => {
-        console.error(' Photo upload failed:', err);
-        alert('Failed to upload photo!');
-      },
-    });
+    this.profileService
+      .uploadProfilePhoto(merchantId, this.selectedFile)
+      .subscribe({
+        next: (res: MerchantProfile) => {
+          this.profile = res;
+          this.profileService.setProfile(res);
+          this.selectedFile = null;
+          this.previewUrl = null;
+          const modalEl = document.getElementById('editProfileModal');
+          const modal = bootstrap.Modal.getInstance(modalEl!);
+          modal.hide();
+          alert('Profile updated successfully!');
+        },
+        error: (err: any) => {
+          console.error(' Photo upload failed:', err);
+          alert('Failed to upload photo!');
+        },
+      });
   }
 }
