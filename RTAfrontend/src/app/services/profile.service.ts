@@ -2,6 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of, tap, throwError } from 'rxjs';
 
+/**
+ * Merchant profile shape used by the app.
+ * Optional fields (username/password/photoUrl) support simple demo flows.
+ */
 export interface MerchantProfile {
   merchantId: string;
   name: string;
@@ -18,12 +22,24 @@ export interface MerchantProfile {
 @Injectable({
   providedIn: 'root',
 })
+
+/**
+ * ProfileService
+ * - Encapsulates all HTTP requests related to merchant profile
+ * - Caches the latest profile in memory and mirrors it in localStorage
+ * - Provides helpers for CRUD-like actions: fetch, update, upload photo
+ */
 export class ProfileService {
   private apiUrl = 'http://localhost:8088/api/profile';
   private cachedProfile: MerchantProfile | null = null;
 
   constructor(private http: HttpClient) {}
-
+  /**
+   * GET /api/profile/{merchantId}
+   * - Fetches profile from server
+   * - On success: cache + return
+   * - On error: log and return an empty profile (keeps UI flowing)
+   */
   fetchProfile(merchantId: string): Observable<MerchantProfile> {
     return this.http.get<MerchantProfile>(`${this.apiUrl}/${merchantId}`).pipe(
       tap((profile) => this.setProfile(profile)),
@@ -33,6 +49,13 @@ export class ProfileService {
       })
     );
   }
+
+    /**
+   * PUT /api/profile/{merchantId}
+   * - Sends updated profile to server
+   * - On success: refresh cache + return updated profile
+   * - On error: propagate error to the caller (form can show message)
+   */
 
   updateProfile(merchantId: string, updatedProfile: MerchantProfile): Observable<MerchantProfile> {
     return this.http.put<MerchantProfile>(`${this.apiUrl}/${merchantId}`, updatedProfile).pipe(
@@ -46,6 +69,13 @@ export class ProfileService {
       })
     );
   }
+
+    /**
+   * POST /api/profile/{merchantId}/photo
+   * - Uploads a profile photo via multipart/form-data
+   * - On success: cache refreshed profile returned by backend
+   * - On error: propagate error to the caller
+   */
 
   uploadProfilePhoto(merchantId: string, file: File): Observable<MerchantProfile> {
     const formData = new FormData();

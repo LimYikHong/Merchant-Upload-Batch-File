@@ -5,6 +5,15 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 
+/**
+ * LoginComponent
+ * - Simple merchant sign-in form using template-driven forms (ngModel)
+ * - Calls AuthService.login(username, password) and stores profile on success
+ * - Navigates to /batch-list after successful login
+ * - Shows basic inline error when validation/auth fails
+ * - Demonstrates: standalone component, two-way binding, form submit, routing, localStorage
+ */
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -105,11 +114,20 @@ export class LoginComponent {
   password = '';
   errorMessage = '';
 
+  // Inject auth flow + navigation + profile caching
   constructor(
     private auth: AuthService,
     private router: Router,
     private profileService: ProfileService
   ) {}
+
+   /**
+   * Handles form submit:
+   * - Basic empty-field guard
+   * - Calls AuthService.login and stores the returned profile
+   * - Persists profile in localStorage (simple session) and navigates to batch list
+   * - Sets an error message on login failure
+   */
 
   onLogin(): void {
     if (!this.username || !this.password) {
@@ -117,6 +135,7 @@ export class LoginComponent {
       return;
     }
 
+    // Call backend via AuthService; expect a MerchantProfile on success
     this.auth.login(this.username, this.password).subscribe({
       next: (profile) => {
         this.profileService.setProfile(profile);
