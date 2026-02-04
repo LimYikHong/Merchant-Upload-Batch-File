@@ -19,13 +19,21 @@ export class AuthService {
 
   /**
    * POST /api/auth/login
-   * - Sends credentials and expects a MerchantProfile on success.
-   * - Caller should persist the returned profile (e.g., localStorage) if needed.
+   * - Sends credentials.
+   * - Response can be actual MerchantProfile (old flow) 
+   * - OR a Map with status: "2FA_REQUIRED" | "SETUP_2FA"
    */
-  login(username: string, password: string): Observable<MerchantProfile> {
-    return this.http.post<MerchantProfile>(`${this.apiUrl}/login`, {
+  login(username: string, password: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/login`, {
       username,
       password,
+    });
+  }
+
+  verify2fa(username: string, code: number): Observable<MerchantProfile> {
+    return this.http.post<MerchantProfile>(`${this.apiUrl}/verify-2fa`, {
+      username,
+      code
     });
   }
 

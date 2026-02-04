@@ -6,14 +6,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import rta.entity.RtaBatch;
 import rta.entity.RtaTransaction;
+import rta.entity.MerchantActivityLog;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaTransactionRepository;
+import rta.repository.MerchantActivityLogRepository;
 
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -25,12 +28,23 @@ public class RtaBatchController {
 
     private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
-    private final List<String> activityLog = new ArrayList<>();
+    private final MerchantActivityLogRepository activityLogRepository;
 
     public RtaBatchController(RtaBatchRepository batchRepository,
-            RtaTransactionRepository transactionRepository) {
+            RtaTransactionRepository transactionRepository,
+            MerchantActivityLogRepository activityLogRepository) {
         this.batchRepository = batchRepository;
         this.transactionRepository = transactionRepository;
+        this.activityLogRepository = activityLogRepository;
+    }
+
+    private void logActivity(String merchantId, String type, String description) {
+        MerchantActivityLog log = new MerchantActivityLog();
+        log.setMerchantId(merchantId);
+        log.setActivityType(type);
+        log.setDescription(description);
+        log.setTimestamp(LocalDateTime.now());
+        activityLogRepository.save(log);
     }
 
     /**
@@ -44,12 +58,14 @@ public class RtaBatchController {
 
     /**
      * GET /api/batches/activity
-     * - Returns simple activity messages accumulated during controller operations.
-     * (Memory-only; resets on restart)
+     * - Returns activity messages from DB.
      */
     @GetMapping("/activity")
     public List<String> getActivityLog() {
-        return activityLog;
+        return activityLogRepository.findAll().stream()
+                .sorted(Comparator.comparing(MerchantActivityLog::getTimestamp).reversed())
+                .map(log -> "[" + log.getTimestamp() + "] " + log.getDescription())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -103,12 +119,12 @@ public class RtaBatchController {
             batch.setStatus("UPLOADED");
             RtaBatch savedBatch = batchRepository.save(batch);
 
-            activityLog.add("Uploaded: " + fileName + " by " + merchantId);
+            logActivity(merchantId, "UPLOAD_BATCH", "Uploaded: " + fileName + " by " + merchantId);
 
             return ResponseEntity.ok(savedBatch);
 
         } catch (Exception e) {
-            activityLog.add("Upload failed: " + e.getMessage());
+            logActivity(merchantId, "UPLOAD_BATCH_FAILED", "Upload failed: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error during upload: " + e.getMessage());
         }
@@ -142,11 +158,13 @@ public class RtaBatchController {
             }
             batch.setStatus("READY");
             batchRepository.save(batch);
-            activityLog.add("Processed CSV: " + file.getName() + " (" + success + " records)");
+            logActivity(batch.getMerchantId(), "PROCESS_CSV",
+                    "Processed CSV: " + file.getName() + " (" + success + " records)");
         } catch (Exception e) {
             batch.setStatus("FAILED");
             batchRepository.save(batch);
-            activityLog.add("CSV processing failed for " + file.getName() + ": " + e.getMessage());
+            logActivity(batch.getMerchantId(), "PROCESS_CSV_FAILED",
+                    "CSV processing failed for " + file.getName() + ": " + e.getMessage());
         }
     }
 
@@ -191,12 +209,14 @@ public class RtaBatchController {
 
             batch.setStatus("READY");
             batchRepository.save(batch);
-            activityLog.add("Processed Excel: " + file.getName() + " (" + success + " records)");
+            logActivity(batch.getMerchantId(), "PROCESS_EXCEL",
+                    "Processed Excel: " + file.getName() + " (" + success + " records)");
 
         } catch (Exception e) {
             batch.setStatus("FAILED");
             batchRepository.save(batch);
-            activityLog.add("Excel processing failed for " + file.getName() + ": " + e.getMessage());
+            logActivity(batch.getMerchantId(), "PROCESS_EXCEL_FAILED",
+                    "Excel processing failed for " + file.getName() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -213,7 +233,7 @@ public class RtaBatchController {
             if (batchDetails.getStatus() != null)
                 batch.setStatus(batchDetails.getStatus());
             RtaBatch updated = batchRepository.save(batch);
-            activityLog.add("Updated batch ID " + id);
+            logActivity(batch.getMerchantId(), "UPDATE_BATCH", "Updated batch ID " + id);
             return ResponseEntity.ok(updated);
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -232,21 +252,23 @@ public class RtaBatchController {
                 List<RtaTransaction> transactions = transactionRepository.findByBatchId(id);
                 if (!transactions.isEmpty()) {
                     transactionRepository.deleteAll(transactions);
-                    activityLog.add("Deleted " + transactions.size() + " transactions for batch " + id);
+                    logActivity(batch.getMerchantId(), "DELETE_TRANSACTIONS",
+                            "Deleted " + transactions.size() + " transactions for batch " + id);
                 }
 
                 Path filePath = Paths.get("uploads/" + batch.getFileName());
                 if (Files.exists(filePath)) {
                     Files.delete(filePath);
-                    activityLog.add("Deleted file: " + filePath.getFileName());
+                    logActivity(batch.getMerchantId(), "DELETE_FILE", "Deleted file: " + filePath.getFileName());
                 }
 
                 batchRepository.delete(batch);
-                activityLog.add("Batch ID " + id + " deleted.");
+                logActivity(batch.getMerchantId(), "DELETE_BATCH", "Batch ID " + id + " deleted.");
 
                 return ResponseEntity.ok(Map.of("message", "Batch and related records deleted successfully"));
             } catch (IOException e) {
-                activityLog.add("File deletion failed for batch " + id + ": " + e.getMessage());
+                logActivity(batch.getMerchantId(), "DELETE_BATCH_FAILED",
+                        "File deletion failed for batch " + id + ": " + e.getMessage());
                 return ResponseEntity.internalServerError()
                         .body(Map.of("error", "Batch deleted from DB, but file removal failed"));
             }

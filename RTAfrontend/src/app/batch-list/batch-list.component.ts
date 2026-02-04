@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { PortalService, RtaBatch } from '../services/portal.service';
 import { ProfileService, MerchantProfile } from '../services/profile.service';
+import { AuthService } from '../services/auth.service';
 
 /**
  * BatchListComponent
@@ -17,200 +18,8 @@ import { ProfileService, MerchantProfile } from '../services/profile.service';
   selector: 'app-batch-list',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
-  template: `
-    <div class="profile-container">
-      <aside class="sidebar">
-        <h2>RTA Merchant Upload</h2>
-        <ul>
-          <li routerLink="/batch-list" routerLinkActive="active">
-            <b>Upload Batch File</b>
-          </li>
-          <li routerLink="/profile" routerLinkActive="active">View Profile</li>
-        </ul>
-      </aside>
-
-      <main class="profile-content">
-        <h1>Uploaded Batches</h1>
-
-        <div class="merchant-info">
-          <p>
-            🧾 Merchant ID: <b>{{ merchant?.merchantId }}</b>
-          </p>
-          <p>
-            🏢 Company: <b>{{ merchant?.company }}</b>
-          </p>
-          <p>
-            👤 Name: <b>{{ merchant?.name }}</b>
-          </p>
-        </div>
-
-        <div class="upload-section">
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv,.txt"
-            (change)="onFileSelected($event)"
-          />
-          <button (click)="uploadBatch()">Upload</button>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>File Name</th>
-              <th>Status</th>
-              <th>Merchant</th>
-              <th>Created By</th>
-              <th>Created At</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-         
-          <tbody>
-            <tr *ngFor="let batch of batches">
-              <td>{{ batch.fileName }}</td>
-              <td>{{ batch.status }}</td>
-              <td>{{ batch.merchantId }}</td>
-              <td>{{ batch.createdBy }}</td>
-              <td>{{ batch.createdAt | date : 'short' }}</td>
-              <td>
-                <button class="btn-blue" (click)="viewBatch(batch.id!)">
-                  View
-                </button>
-                <button class="btn-red" (click)="deleteBatch(batch.id!)">
-                  Delete
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <section class="activity-log">
-          <h3>Activity Log</h3>
-          <ul>
-            <li *ngFor="let log of activityLogs">{{ log }}</li>
-          </ul>
-        </section>
-      </main>
-    </div>
-  `,
-  styles: [
-    `
-      .profile-container {
-        display: flex;
-        min-height: 100vh;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f9fafb;
-      }
-
-      .sidebar {
-        background-color: #1e2a38;
-        color: white;
-        width: 220px;
-        height: 100vh;
-        padding: 30px 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .sidebar h2 {
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 30px;
-        border-bottom: 1px solid #334155;
-        padding-bottom: 10px;
-        text-transform: uppercase;
-        width: 100%;
-        text-align: center;
-      }
-
-      .sidebar li {
-        margin: 15px 0;
-        cursor: pointer;
-        color: #e2e8f0;
-        padding: 5px 10px;
-        border-radius: 4px;
-      }
-
-      .sidebar li:hover,
-      .sidebar li.active {
-        color: #60a5fa;
-        background-color: #243447;
-      }
-
-      .profile-content {
-        flex: 1;
-        padding: 40px 60px;
-        overflow-y: auto;
-      }
-
-      .merchant-info {
-        margin-bottom: 15px;
-        line-height: 1.5;
-        color: #475569;
-      }
-
-      .upload-section {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 15px;
-      }
-
-      button {
-        padding: 6px 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-
-      .btn-blue {
-        background-color: #3b82f6;
-        color: white;
-      }
-
-      .btn-blue:hover {
-        background-color: #2563eb;
-      }
-
-      .btn-red {
-        background-color: #ef4444;
-        color: white;
-        margin-left: 5px;
-      }
-
-      .btn-red:hover {
-        background-color: #dc2626;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-        background: white;
-        border-radius: 6px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      }
-
-      th,
-      td {
-        padding: 10px;
-        border-bottom: 1px solid #e5e7eb;
-        text-align: left;
-      }
-
-      th {
-        background-color: #e2e8f0;
-      }
-
-      .activity-log {
-        margin-top: 25px;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      }
-    `,
-  ],
+  templateUrl: './batch-list.component.html',
+  styleUrl: './batch-list.component.scss'
 })
 export class BatchListComponent implements OnInit {
   batches: RtaBatch[] = [];
@@ -225,13 +34,38 @@ export class BatchListComponent implements OnInit {
 
   constructor(
     private portalService: PortalService,
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   // read merchant profile from cache and load batch list
   ngOnInit(): void {
     this.merchant = this.profileService.getProfile();
+
+    if (this.merchant && this.merchant.merchantId) {
+      this.profileService.fetchProfile(this.merchant.merchantId).subscribe({
+        next: (profile) => {
+          this.merchant = profile;
+        },
+        error: (err) => console.error('Failed to refresh profile from DB', err),
+      });
+    }
+
     this.loadBatches();
+    this.loadActivityLogs();
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  loadActivityLogs(): void {
+    this.portalService.getActivityLogs().subscribe({
+      next: (logs) => (this.activityLogs = logs),
+      error: (err) => console.error('Failed to fetch logs', err)
+    });
   }
 
   // Fetch batches from backend and update table
@@ -289,6 +123,7 @@ export class BatchListComponent implements OnInit {
         next: (res) => {
           this.logActivity(`File ${res.fileName} uploaded successfully`);
           this.loadBatches();
+          this.loadActivityLogs();
         },
         error: (err) => {
           this.logActivity(`Upload failed: ${err.message}`);
@@ -315,6 +150,7 @@ export class BatchListComponent implements OnInit {
       next: () => {
         this.logActivity(`Batch ID ${id} deleted.`);
         this.loadBatches();
+        this.loadActivityLogs();
       },
       error: (err) =>
         this.logActivity(`Failed to delete batch: ${err.message}`),

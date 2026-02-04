@@ -82,25 +82,4 @@ public class ProfileController {
         return ResponseEntity.ok(updatedProfile);
     }
 
-    @PostConstruct
-    public void initSampleProfile() {
-        List<MerchantProfile> existing = profileRepository.findAll()
-                .stream()
-                .filter(p -> "M789".equals(p.getMerchantId()))
-                .toList();
-
-        if (existing.isEmpty()) {
-            MerchantProfile profile = new MerchantProfile();
-            profile.setMerchantId("M789");
-            profile.setUsername("merchant1");
-            profile.setPassword("123456");
-            profile.setName("John Tan");
-            profile.setEmail("john.tan@example.com");
-            profile.setCompany("Tan Supplies Trading");
-            profile.setContact("+60 12-345 6789");
-            profile.setAddress("32A, Jalan SS15/4, Subang Jaya, Selangor");
-            profile.setJoinedOn(LocalDateTime.now());
-            profileRepository.save(profile);
-        }
-    }
 }

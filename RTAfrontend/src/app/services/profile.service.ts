@@ -109,6 +109,12 @@ export class ProfileService {
   }
 
   getProfile(): MerchantProfile {
+    if (!this.cachedProfile) {
+      const stored = localStorage.getItem('merchantProfile');
+      if (stored) {
+        this.cachedProfile = JSON.parse(stored);
+      }
+    }
     return this.cachedProfile ?? this.emptyProfile();
   }
 

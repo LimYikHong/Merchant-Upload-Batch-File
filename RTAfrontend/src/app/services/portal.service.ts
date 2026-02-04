@@ -36,6 +36,10 @@ export class PortalService {
   getBatches(): Observable<RtaBatch[]> {
     return this.http.get<RtaBatch[]>(this.apiUrl);
   }
+
+  getActivityLogs(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/activity`);
+  }
   /**
    * POST /api/batches/upload
    * - Uploads a batch file using multipart/form-data.

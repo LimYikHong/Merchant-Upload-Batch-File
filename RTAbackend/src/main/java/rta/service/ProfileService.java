@@ -5,12 +5,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import rta.model.MerchantProfile;
 import rta.repository.ProfileRepository;
+import rta.repository.MerchantActivityLogRepository;
+import rta.entity.MerchantActivityLog;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.UUID;
+import com.warrenstrange.googleauth.GoogleAuthenticator;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 
 @Service
 
@@ -22,9 +27,21 @@ import java.util.UUID;
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
+    private final MerchantActivityLogRepository activityLogRepository;
+    private final GoogleAuthenticator gAuth = new GoogleAuthenticator();
 
-    public ProfileService(ProfileRepository profileRepository) {
+    public ProfileService(ProfileRepository profileRepository, MerchantActivityLogRepository activityLogRepository) {
         this.profileRepository = profileRepository;
+        this.activityLogRepository = activityLogRepository;
+    }
+
+    private void logActivity(String merchantId, String type, String description) {
+        MerchantActivityLog log = new MerchantActivityLog();
+        log.setMerchantId(merchantId);
+        log.setActivityType(type);
+        log.setDescription(description);
+        log.setTimestamp(LocalDateTime.now());
+        activityLogRepository.save(log);
     }
 
     /**
@@ -36,10 +53,57 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!profile.getPassword().equals(password)) {
+            logActivity(profile.getMerchantId(), "LOGIN_FAILED", "Invalid password for user: " + username);
             throw new RuntimeException("Invalid password");
         }
 
+        // Don't log success here strictly if we are moving to 2FA
+        // But for now, we leave it, the controller will decide what to return.
         return profile;
+    }
+
+    public String generate2FASecret(String username) {
+        MerchantProfile profile = profileRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (profile.getTwoFactorSecret() != null && !profile.getTwoFactorSecret().isEmpty()) {
+            return profile.getTwoFactorSecret();
+        }
+
+        final GoogleAuthenticatorKey key = gAuth.createCredentials();
+        String secret = key.getKey();
+        profile.setTwoFactorSecret(secret);
+        // Do NOT enable it yet. User must verify first.
+        profileRepository.save(profile);
+        return secret;
+    }
+
+    public boolean verify2FA(String username, int code) {
+        MerchantProfile profile = profileRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (profile.getTwoFactorSecret() == null) {
+            return false;
+        }
+
+        boolean isCodeValid = gAuth.authorize(profile.getTwoFactorSecret(), code);
+
+        if (isCodeValid) {
+            // If not enabled yet, enable it now (first successful verification)
+            if (!profile.isTwoFactorEnabled()) {
+                profile.setTwoFactorEnabled(true);
+                profileRepository.save(profile);
+            }
+            logActivity(profile.getMerchantId(), "LOGIN_2FA_SUCCESS", "User logged in with 2FA successfully");
+        } else {
+            logActivity(profile.getMerchantId(), "LOGIN_2FA_FAILED", "Invalid 2FA code for user: " + username);
+        }
+        return isCodeValid;
+    }
+
+    public MerchantProfile getProfileByUsername(String username) {
+        return profileRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     /**
@@ -50,7 +114,9 @@ public class ProfileService {
         if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
-        return profileRepository.save(profile);
+        MerchantProfile saved = profileRepository.save(profile);
+        logActivity(saved.getMerchantId(), "REGISTER", "New merchant registered: " + saved.getUsername());
+        return saved;
     }
 
     /**
@@ -76,7 +142,10 @@ public class ProfileService {
         existing.setContact(newProfile.getContact());
         existing.setAddress(newProfile.getAddress());
         existing.setJoinedOn(newProfile.getJoinedOn());
-        return profileRepository.save(existing);
+
+        MerchantProfile updated = profileRepository.save(existing);
+        logActivity(merchantId, "UPDATE_PROFILE", "Profile updated");
+        return updated;
     }
 
     /**
@@ -110,8 +179,11 @@ public class ProfileService {
             String fileUrl = "/uploads/profile-photos/" + newFilename;
             profile.setProfilePhotoUrl(fileUrl);
 
-            return profileRepository.save(profile);
+            MerchantProfile saved = profileRepository.save(profile);
+            logActivity(merchantId, "UPLOAD_PHOTO", "Profile photo uploaded: " + newFilename);
+            return saved;
         } catch (IOException e) {
+            logActivity(merchantId, "UPLOAD_PHOTO_FAILED", "Failed to upload photo: " + e.getMessage());
             throw new RuntimeException("Failed to store file.", e);
         }
     }

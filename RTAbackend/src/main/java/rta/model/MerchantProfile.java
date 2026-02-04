@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "profiles")
+@Table(name = "rta_user")
 @Data
 public class MerchantProfile {
     @Id
@@ -36,4 +36,10 @@ public class MerchantProfile {
 
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
+
+    @Column(name = "two_factor_secret")
+    private String twoFactorSecret;
+
+    @Column(name = "is_two_factor_enabled")
+    private boolean isTwoFactorEnabled;
 }
