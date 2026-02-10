@@ -58,6 +58,9 @@
             <button class="btn-blue" (click)="viewBatch(batch.id!)">
               View
             </button>
+            <button class="btn-green" (click)="sendToBank(batch.id!)" [disabled]="batch.status === 'SENT_TO_BANK'">
+              {{ batch.status === 'SENT_TO_BANK' ? 'Sent ✓' : 'Send to Bank' }}
+            </button>
             <button class="btn-red" (click)="deleteBatch(batch.id!)">
               Delete
             </button>

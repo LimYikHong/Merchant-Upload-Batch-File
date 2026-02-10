@@ -132,6 +132,23 @@ export class BatchListComponent implements OnInit {
       });
   }
 
+  // Send a batch file to the bank's HTTPS API
+  sendToBank(id: number): void {
+    if (!confirm('Send this batch file to the bank?')) return;
+
+    this.portalService.sendToBank(id).subscribe({
+      next: (res) => {
+        this.logActivity(`File sent to bank successfully: ${res.message}`);
+        this.loadBatches();
+        this.loadActivityLogs();
+      },
+      error: (err) => {
+        const msg = err.error?.error || err.message || 'Unknown error';
+        this.logActivity(`Failed to send to bank: ${msg}`);
+      }
+    });
+  }
+
   // Show a simple alert with batch details (for quick view)
   viewBatch(id: number): void {
     const batch = this.batches.find((b) => b.id === id);

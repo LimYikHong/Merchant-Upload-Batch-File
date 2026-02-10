@@ -70,6 +70,14 @@ export class PortalService {
     );
   }
   /**
+   * POST /api/batches/{id}/send-to-bank
+   * - Sends the uploaded batch file to the bank's HTTPS API.
+   */
+  sendToBank(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/send-to-bank`, {});
+  }
+
+  /**
    * DELETE /api/batches/{id}
    * - Removes a batch by id.
    */

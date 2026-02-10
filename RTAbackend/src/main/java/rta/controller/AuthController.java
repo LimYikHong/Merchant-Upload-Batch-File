@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(originPatterns = "http://localhost:*")
 public class AuthController {
 
     private final ProfileService profileService;
@@ -22,12 +22,9 @@ public class AuthController {
     }
 
     /**
-     * POST /api/auth/login
-     * - Step 1: Username/Password check.
-     * - If valid, checks 2FA status.
-     * - Returns:
-     * - 200 + { status: "2FA_REQUIRED" } (if 2FA active)
-     * - 200 + { status: "SETUP_2FA", secret: "..." } (if not set up)
+     * POST /api/auth/login - Step 1: Username/Password check. - If valid,
+     * checks 2FA status. - Returns: - 200 + { status: "2FA_REQUIRED" } (if 2FA
+     * active) - 200 + { status: "SETUP_2FA", secret: "..." } (if not set up)
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody MerchantProfile credentials) {
@@ -36,7 +33,6 @@ public class AuthController {
 
             // Generate secret if missing (force setup) or retrieve existing status
             // For this flow, we'll force setup if it's not enabled/present
-
             Map<String, Object> response = new HashMap<>();
 
             if (!user.isTwoFactorEnabled()) {
@@ -51,7 +47,7 @@ public class AuthController {
                 String otpAuthUrl = "otpauth://totp/RTA_Example:" + user.getUsername()
                         + "?secret=" + secret
                         + "&issuer=RTA_Example";
-                
+
                 // Return the raw URI for client-side QR generation
                 response.put("otpAuthUri", otpAuthUrl);
 

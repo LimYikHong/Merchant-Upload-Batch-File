@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(originPatterns = "http://localhost:*")
 @RestController
 @RequestMapping("/api/batches")
 public class RtaBatchController {
@@ -48,8 +48,7 @@ public class RtaBatchController {
     }
 
     /**
-     * GET /api/batches
-     * - Returns all batches.
+     * GET /api/batches - Returns all batches.
      */
     @GetMapping
     public List<RtaBatch> getAllBatches() {
@@ -57,8 +56,7 @@ public class RtaBatchController {
     }
 
     /**
-     * GET /api/batches/activity
-     * - Returns activity messages from DB.
+     * GET /api/batches/activity - Returns activity messages from DB.
      */
     @GetMapping("/activity")
     public List<String> getActivityLog() {
@@ -69,10 +67,9 @@ public class RtaBatchController {
     }
 
     /**
-     * POST /api/batches/upload
-     * - Validates file type + content type.
-     * - Saves the uploaded file under /uploads.
-     * - Creates a batch record with status=UPLOADED.
+     * POST /api/batches/upload - Validates file type + content type. - Saves
+     * the uploaded file under /uploads. - Creates a batch record with
+     * status=UPLOADED.
      */
     @PostMapping("/upload")
     public ResponseEntity<?> uploadBatch(@RequestParam("file") MultipartFile file,
@@ -96,11 +93,11 @@ public class RtaBatchController {
             }
 
             String contentType = file.getContentType();
-            if (contentType == null ||
-                    !(contentType.equals("application/vnd.ms-excel") ||
-                            contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ||
-                            contentType.equals("text/plain") ||
-                            contentType.equals("text/csv"))) {
+            if (contentType == null
+                    || !(contentType.equals("application/vnd.ms-excel")
+                    || contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    || contentType.equals("text/plain")
+                    || contentType.equals("text/csv"))) {
                 return ResponseEntity.badRequest()
                         .body("Invalid content type: " + contentType);
             }
@@ -131,8 +128,8 @@ public class RtaBatchController {
     }
 
     /**
-     * Helper: parse CSV into transactions, set batch to READY/FAILED.
-     * - Expected columns: accountNumber, amount, currency
+     * Helper: parse CSV into transactions, set batch to READY/FAILED. -
+     * Expected columns: accountNumber, amount, currency
      */
     private void processCsvFile(RtaBatch batch, File file) {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -140,8 +137,9 @@ public class RtaBatchController {
             int success = 0;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length < 3)
+                if (parts.length < 3) {
                     continue;
+                }
 
                 RtaTransaction tx = new RtaTransaction();
                 tx.setBatch(batch);
@@ -170,28 +168,28 @@ public class RtaBatchController {
 
     /**
      * Helper: parse first sheet of XLSX into transactions, set batch to
-     * READY/FAILED.
-     * - Assumes first row is header; skips it.
-     * - Expected columns: [0]=accountNumber (string), [1]=amount (numeric),
-     * [2]=currency (string).
+     * READY/FAILED. - Assumes first row is header; skips it. - Expected
+     * columns: [0]=accountNumber (string), [1]=amount (numeric), [2]=currency
+     * (string).
      */
     private void processExcelFile(RtaBatch batch, File file) {
-        try (InputStream fis = new FileInputStream(file);
-                Workbook workbook = new XSSFWorkbook(fis)) {
+        try (InputStream fis = new FileInputStream(file); Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             int success = 0;
 
             for (Row row : sheet) {
-                if (row.getRowNum() == 0)
+                if (row.getRowNum() == 0) {
                     continue;
+                }
 
                 Cell accCell = row.getCell(0);
                 Cell amtCell = row.getCell(1);
                 Cell curCell = row.getCell(2);
 
-                if (accCell == null || amtCell == null || curCell == null)
+                if (accCell == null || amtCell == null || curCell == null) {
                     continue;
+                }
 
                 RtaTransaction tx = new RtaTransaction();
                 tx.setBatch(batch);
@@ -222,16 +220,108 @@ public class RtaBatchController {
     }
 
     /**
-     * PUT /api/batches/{id}
-     * - Updates batch fields (currently merchantId/status).
+     * POST /api/batches/{id}/send-to-bank - Reads the uploaded file from disk
+     * and forwards it to the bank's HTTPS upload API. - Uses SSL trust-all for
+     * self-signed certificate (dev only).
+     */
+    @PostMapping("/{id}/send-to-bank")
+    public ResponseEntity<?> sendToBank(@PathVariable Long id) {
+        return batchRepository.findById(id).map(batch -> {
+            try {
+                Path filePath = Paths.get("uploads/" + batch.getFileName());
+                if (!Files.exists(filePath)) {
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "File not found on disk: " + batch.getFileName()));
+                }
+
+                // Create SSL context that trusts all certificates (for self-signed dev cert)
+                javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[]{
+                    new javax.net.ssl.X509TrustManager() {
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
+
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+                    }
+                };
+                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+                java.net.http.HttpClient httpClient = java.net.http.HttpClient.newBuilder()
+                        .sslContext(sslContext)
+                        .build();
+
+                // Build multipart form data
+                String boundary = "----FormBoundary" + System.currentTimeMillis();
+                byte[] fileBytes = Files.readAllBytes(filePath);
+                String fileName = batch.getFileName();
+                String merchantId = batch.getMerchantId();
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                String filePart = "--" + boundary + "\r\n"
+                        + "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n"
+                        + "Content-Type: application/octet-stream\r\n\r\n";
+                baos.write(filePart.getBytes());
+                baos.write(fileBytes);
+                baos.write("\r\n".getBytes());
+
+                String merchantPart = "--" + boundary + "\r\n"
+                        + "Content-Disposition: form-data; name=\"merchantId\"\r\n\r\n"
+                        + merchantId + "\r\n";
+                baos.write(merchantPart.getBytes());
+                baos.write(("--" + boundary + "--\r\n").getBytes());
+
+                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create("https://localhost:8086/api/incoming/upload"))
+                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                        .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()))
+                        .build();
+
+                java.net.http.HttpResponse<String> response = httpClient.send(request,
+                        java.net.http.HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    batch.setStatus("SENT_TO_BANK");
+                    batchRepository.save(batch);
+                    logActivity(merchantId, "SEND_TO_BANK",
+                            "Sent " + fileName + " to bank successfully");
+                    return ResponseEntity.ok(Map.of(
+                            "message", "File sent to bank successfully",
+                            "bankResponse", response.body()));
+                } else {
+                    logActivity(merchantId, "SEND_TO_BANK_FAILED",
+                            "Bank returned status " + response.statusCode() + ": " + response.body());
+                    return ResponseEntity.status(response.statusCode())
+                            .body(Map.of("error", "Bank rejected the file", "details", response.body()));
+                }
+
+            } catch (Exception e) {
+                logActivity(batch.getMerchantId(), "SEND_TO_BANK_FAILED",
+                        "Failed to send to bank: " + e.getMessage());
+                e.printStackTrace();
+                return ResponseEntity.internalServerError()
+                        .body(Map.of("error", "Failed to send file to bank: " + e.getMessage()));
+            }
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * PUT /api/batches/{id} - Updates batch fields (currently
+     * merchantId/status).
      */
     @PutMapping("/{id}")
     public ResponseEntity<RtaBatch> updateBatch(@PathVariable Long id, @RequestBody RtaBatch batchDetails) {
         return batchRepository.findById(id).map(batch -> {
-            if (batchDetails.getMerchantId() != null)
+            if (batchDetails.getMerchantId() != null) {
                 batch.setMerchantId(batchDetails.getMerchantId());
-            if (batchDetails.getStatus() != null)
+            }
+            if (batchDetails.getStatus() != null) {
                 batch.setStatus(batchDetails.getStatus());
+            }
             RtaBatch updated = batchRepository.save(batch);
             logActivity(batch.getMerchantId(), "UPDATE_BATCH", "Updated batch ID " + id);
             return ResponseEntity.ok(updated);
@@ -239,11 +329,9 @@ public class RtaBatchController {
     }
 
     /**
-     * DELETE /api/batches/{id}
-     * - Deletes related transactions, the file on disk (if present), and the batch
-     * record itself.
-     * - Returns success JSON or an error message if file deletion fails after DB
-     * delete.
+     * DELETE /api/batches/{id} - Deletes related transactions, the file on disk
+     * (if present), and the batch record itself. - Returns success JSON or an
+     * error message if file deletion fails after DB delete.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBatch(@PathVariable Long id) {

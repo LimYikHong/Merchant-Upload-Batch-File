@@ -14,15 +14,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/profile")
 @RequiredArgsConstructor
-@CrossOrigin(origins = { "http://localhost:4200", "http://localhost:8088" })
+@CrossOrigin(originPatterns = "http://localhost:*")
 public class ProfileController {
 
     private final ProfileService profileService;
     private final ProfileRepository profileRepository;
 
     /**
-     * POST /api/profile/register
-     * - Creates a new merchant profile (demo registration endpoint).
+     * POST /api/profile/register - Creates a new merchant profile (demo
+     * registration endpoint).
      */
     @PostMapping("/register")
     public ResponseEntity<MerchantProfile> register(@RequestBody MerchantProfile profile) {
@@ -30,11 +30,9 @@ public class ProfileController {
     }
 
     /**
-     * POST /api/profile/login
-     * - Simple login that delegates to ProfileService.
+     * POST /api/profile/login - Simple login that delegates to ProfileService.
      * - Returns 200 with profile on success; 401 with message on failure.
      */
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody MerchantProfile credentials) {
         try {
@@ -48,8 +46,7 @@ public class ProfileController {
     }
 
     /**
-     * GET /api/profile/{merchantId}
-     * - Fetches a merchant profile by merchantId.
+     * GET /api/profile/{merchantId} - Fetches a merchant profile by merchantId.
      */
     @GetMapping("/{merchantId}")
     public ResponseEntity<MerchantProfile> getProfile(@PathVariable String merchantId) {
@@ -58,8 +55,8 @@ public class ProfileController {
     }
 
     /**
-     * PUT /api/profile/{merchantId}
-     * - Updates profile fields (company/contact/address/etc).
+     * PUT /api/profile/{merchantId} - Updates profile fields
+     * (company/contact/address/etc).
      */
     @PutMapping("/{merchantId}")
     public ResponseEntity<MerchantProfile> updateProfile(
@@ -70,9 +67,9 @@ public class ProfileController {
     }
 
     /**
-     * POST /api/profile/{merchantId}/photo
-     * - Uploads a profile photo (multipart/form-data).
-     * - Returns the updated profile including new photo URL/path.
+     * POST /api/profile/{merchantId}/photo - Uploads a profile photo
+     * (multipart/form-data). - Returns the updated profile including new photo
+     * URL/path.
      */
     @PostMapping("/{merchantId}/photo")
     public ResponseEntity<MerchantProfile> uploadProfilePhoto(
