@@ -27,6 +27,13 @@
     text-align: center;
 }
 
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
 .sidebar li {
     margin: 15px 0;
     cursor: pointer;
@@ -73,6 +80,21 @@ button {
 
 .btn-blue:hover {
     background-color: #2563eb;
+}
+
+.btn-green {
+    background-color: #22c55e;
+    color: white;
+    margin-left: 5px;
+}
+
+.btn-green:hover {
+    background-color: #16a34a;
+}
+
+.btn-green:disabled {
+    background-color: #86efac;
+    cursor: not-allowed;
 }
 
 .btn-red {
