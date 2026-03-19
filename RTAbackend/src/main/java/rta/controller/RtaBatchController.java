@@ -10,6 +10,7 @@ import rta.entity.MerchantActivityLog;
 import rta.repository.RtaBatchRepository;
 import rta.repository.RtaTransactionRepository;
 import rta.repository.MerchantActivityLogRepository;
+import rta.service.MinioStorageService;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-@CrossOrigin(originPatterns = "http://localhost:*")
+@CrossOrigin(originPatterns = {"http://localhost:*", "https://localhost:*"})
 @RestController
 @RequestMapping("/api/batches")
 public class RtaBatchController {
@@ -29,13 +30,16 @@ public class RtaBatchController {
     private final RtaBatchRepository batchRepository;
     private final RtaTransactionRepository transactionRepository;
     private final MerchantActivityLogRepository activityLogRepository;
+    private final MinioStorageService minioStorageService;
 
     public RtaBatchController(RtaBatchRepository batchRepository,
             RtaTransactionRepository transactionRepository,
-            MerchantActivityLogRepository activityLogRepository) {
+            MerchantActivityLogRepository activityLogRepository,
+            MinioStorageService minioStorageService) {
         this.batchRepository = batchRepository;
         this.transactionRepository = transactionRepository;
         this.activityLogRepository = activityLogRepository;
+        this.minioStorageService = minioStorageService;
     }
 
     private void logActivity(String merchantId, String type, String description) {
@@ -102,10 +106,8 @@ public class RtaBatchController {
                         .body("Invalid content type: " + contentType);
             }
 
-            String uploadDir = "uploads/";
-            Files.createDirectories(Paths.get(uploadDir));
-            Path path = Paths.get(uploadDir + fileName);
-            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+            // Upload file to MinIO
+            minioStorageService.uploadFile(fileName, file);
 
             RtaBatch batch = new RtaBatch();
             batch.setOriginalFileName(originalFileName);
@@ -129,10 +131,11 @@ public class RtaBatchController {
 
     /**
      * Helper: parse CSV into transactions, set batch to READY/FAILED. -
-     * Expected columns: accountNumber, amount, currency
+     * Expected columns: accountNumber, amount, currency - Reads file from MinIO
+     * storage
      */
-    private void processCsvFile(RtaBatch batch, File file) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+    private void processCsvFile(RtaBatch batch, String fileName) {
+        try (InputStream is = minioStorageService.downloadFileAsStream(fileName); BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             String line;
             int success = 0;
             while ((line = reader.readLine()) != null) {
@@ -157,12 +160,12 @@ public class RtaBatchController {
             batch.setStatus("READY");
             batchRepository.save(batch);
             logActivity(batch.getMerchantId(), "PROCESS_CSV",
-                    "Processed CSV: " + file.getName() + " (" + success + " records)");
+                    "Processed CSV: " + fileName + " (" + success + " records)");
         } catch (Exception e) {
             batch.setStatus("FAILED");
             batchRepository.save(batch);
             logActivity(batch.getMerchantId(), "PROCESS_CSV_FAILED",
-                    "CSV processing failed for " + file.getName() + ": " + e.getMessage());
+                    "CSV processing failed for " + fileName + ": " + e.getMessage());
         }
     }
 
@@ -170,10 +173,10 @@ public class RtaBatchController {
      * Helper: parse first sheet of XLSX into transactions, set batch to
      * READY/FAILED. - Assumes first row is header; skips it. - Expected
      * columns: [0]=accountNumber (string), [1]=amount (numeric), [2]=currency
-     * (string).
+     * (string). - Reads file from MinIO storage
      */
-    private void processExcelFile(RtaBatch batch, File file) {
-        try (InputStream fis = new FileInputStream(file); Workbook workbook = new XSSFWorkbook(fis)) {
+    private void processExcelFile(RtaBatch batch, String fileName) {
+        try (InputStream fis = minioStorageService.downloadFileAsStream(fileName); Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             int success = 0;
@@ -208,13 +211,13 @@ public class RtaBatchController {
             batch.setStatus("READY");
             batchRepository.save(batch);
             logActivity(batch.getMerchantId(), "PROCESS_EXCEL",
-                    "Processed Excel: " + file.getName() + " (" + success + " records)");
+                    "Processed Excel: " + fileName + " (" + success + " records)");
 
         } catch (Exception e) {
             batch.setStatus("FAILED");
             batchRepository.save(batch);
             logActivity(batch.getMerchantId(), "PROCESS_EXCEL_FAILED",
-                    "Excel processing failed for " + file.getName() + ": " + e.getMessage());
+                    "Excel processing failed for " + fileName + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -228,10 +231,10 @@ public class RtaBatchController {
     public ResponseEntity<?> sendToBank(@PathVariable Long id) {
         return batchRepository.findById(id).map(batch -> {
             try {
-                Path filePath = Paths.get("uploads/" + batch.getFileName());
-                if (!Files.exists(filePath)) {
+                // Check if file exists in MinIO
+                if (!minioStorageService.fileExists(batch.getFileName())) {
                     return ResponseEntity.badRequest()
-                            .body(Map.of("error", "File not found on disk: " + batch.getFileName()));
+                            .body(Map.of("error", "File not found in storage: " + batch.getFileName()));
                 }
 
                 // Create SSL context that trusts all certificates (for self-signed dev cert)
@@ -257,8 +260,10 @@ public class RtaBatchController {
 
                 // Build multipart form data
                 String boundary = "----FormBoundary" + System.currentTimeMillis();
-                byte[] fileBytes = Files.readAllBytes(filePath);
+                // Download file from MinIO
+                byte[] fileBytes = minioStorageService.downloadFile(batch.getFileName());
                 String fileName = batch.getFileName();
+                String originalFileName = batch.getOriginalFileName();
                 String merchantId = batch.getMerchantId();
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -273,6 +278,21 @@ public class RtaBatchController {
                         + "Content-Disposition: form-data; name=\"merchantId\"\r\n\r\n"
                         + merchantId + "\r\n";
                 baos.write(merchantPart.getBytes());
+
+                // Include file name (renamed with merchantId + timestamp)
+                String fileNamePart = "--" + boundary + "\r\n"
+                        + "Content-Disposition: form-data; name=\"fileName\"\r\n\r\n"
+                        + fileName + "\r\n";
+                baos.write(fileNamePart.getBytes());
+
+                // Include original file name for audit trail
+                if (originalFileName != null && !originalFileName.isEmpty()) {
+                    String originalFileNamePart = "--" + boundary + "\r\n"
+                            + "Content-Disposition: form-data; name=\"originalFileName\"\r\n\r\n"
+                            + originalFileName + "\r\n";
+                    baos.write(originalFileNamePart.getBytes());
+                }
+
                 baos.write(("--" + boundary + "--\r\n").getBytes());
 
                 java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
@@ -344,17 +364,17 @@ public class RtaBatchController {
                             "Deleted " + transactions.size() + " transactions for batch " + id);
                 }
 
-                Path filePath = Paths.get("uploads/" + batch.getFileName());
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    logActivity(batch.getMerchantId(), "DELETE_FILE", "Deleted file: " + filePath.getFileName());
+                // Delete file from MinIO
+                if (minioStorageService.fileExists(batch.getFileName())) {
+                    minioStorageService.deleteFile(batch.getFileName());
+                    logActivity(batch.getMerchantId(), "DELETE_FILE", "Deleted file from MinIO: " + batch.getFileName());
                 }
 
                 batchRepository.delete(batch);
                 logActivity(batch.getMerchantId(), "DELETE_BATCH", "Batch ID " + id + " deleted.");
 
                 return ResponseEntity.ok(Map.of("message", "Batch and related records deleted successfully"));
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logActivity(batch.getMerchantId(), "DELETE_BATCH_FAILED",
                         "File deletion failed for batch " + id + ": " + e.getMessage());
                 return ResponseEntity.internalServerError()

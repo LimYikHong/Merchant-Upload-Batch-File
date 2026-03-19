@@ -110,8 +110,13 @@ export class BatchListComponent implements OnInit {
       .toString()
       .padStart(2, '0')}-${timestamp.getSeconds().toString().padStart(2, '0')}`;
 
+    // Extract original file extension to preserve it
+    const fileExtension = originalFileName.includes('.')
+      ? originalFileName.substring(originalFileName.lastIndexOf('.'))
+      : '.xlsx';
+
     // Create a new File object with the new name (content unchanged)
-    const newFileName = `${this.merchant.merchantId}_${formattedTime}.xlsx`;
+    const newFileName = `${this.merchant.merchantId}_${formattedTime}${fileExtension}`;
     const renamedFile = new File([this.selectedFile], newFileName, {
       type: this.selectedFile.type,
     });
