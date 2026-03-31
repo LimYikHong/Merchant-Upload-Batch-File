@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Table(name = "rta_user")
 @Data
 public class MerchantProfile {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -41,5 +42,5 @@ public class MerchantProfile {
     private String twoFactorSecret;
 
     @Column(name = "is_two_factor_enabled")
-    private boolean isTwoFactorEnabled;
+    private boolean twoFactorEnabled;
 }

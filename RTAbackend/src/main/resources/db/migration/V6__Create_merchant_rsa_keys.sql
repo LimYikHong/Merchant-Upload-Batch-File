@@ -1,0 +1,6 @@
+CREATE TABLE merchant_rsa_keys (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    merchant_id VARCHAR(255) NOT NULL UNIQUE,
+    rsa_public_key TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

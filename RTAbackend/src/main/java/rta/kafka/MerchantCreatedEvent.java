@@ -27,4 +27,5 @@ public class MerchantCreatedEvent {
     private String merchantAccName;
     private String transactionCurrency;
     private String settlementCurrency;
+    private String rsaPublicKeyPem;     // RSA public key in PEM format from RTA_BANK
 }

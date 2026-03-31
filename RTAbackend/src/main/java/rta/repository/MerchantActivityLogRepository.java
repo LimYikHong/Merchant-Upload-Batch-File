@@ -4,6 +4,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import rta.entity.MerchantActivityLog;
 
+import java.util.List;
+
 @Repository
 public interface MerchantActivityLogRepository extends JpaRepository<MerchantActivityLog, Long> {
+
+    List<MerchantActivityLog> findByMerchantIdOrderByTimestampDesc(String merchantId);
 }

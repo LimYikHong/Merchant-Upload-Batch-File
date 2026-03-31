@@ -30,15 +30,21 @@ export class PortalService {
 
   constructor(private http: HttpClient) {}
   /**
-   * GET /api/batches
-   * - Fetch all batches (optionally filtered by backend auth/user).
+   * GET /api/batches?merchantId=xxx
+   * - Fetch batches for the current merchant.
    */
-  getBatches(): Observable<RtaBatch[]> {
-    return this.http.get<RtaBatch[]>(this.apiUrl);
+  getBatches(merchantId?: string): Observable<RtaBatch[]> {
+    const params = merchantId ? `?merchantId=${merchantId}` : '';
+    return this.http.get<RtaBatch[]>(`${this.apiUrl}${params}`);
   }
 
-  getActivityLogs(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/activity`);
+  /**
+   * GET /api/batches/activity?merchantId=xxx
+   * - Fetch activity logs for the current merchant.
+   */
+  getActivityLogs(merchantId?: string): Observable<string[]> {
+    const params = merchantId ? `?merchantId=${merchantId}` : '';
+    return this.http.get<string[]>(`${this.apiUrl}/activity${params}`);
   }
   /**
    * POST /api/batches/upload

@@ -1,0 +1,3 @@
+ALTER TABLE rta_batches ADD COLUMN encrypted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE rta_batches ADD COLUMN encrypted_aes_key TEXT;
+ALTER TABLE rta_batches ADD COLUMN iv VARCHAR(255);

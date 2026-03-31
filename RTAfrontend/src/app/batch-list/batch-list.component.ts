@@ -62,7 +62,8 @@ export class BatchListComponent implements OnInit {
   }
 
   loadActivityLogs(): void {
-    this.portalService.getActivityLogs().subscribe({
+    const merchantId = this.merchant?.merchantId;
+    this.portalService.getActivityLogs(merchantId).subscribe({
       next: (logs) => (this.activityLogs = logs),
       error: (err) => console.error('Failed to fetch logs', err)
     });
@@ -70,7 +71,8 @@ export class BatchListComponent implements OnInit {
 
   // Fetch batches from backend and update table
   loadBatches(): void {
-    this.portalService.getBatches().subscribe({
+    const merchantId = this.merchant?.merchantId;
+    this.portalService.getBatches(merchantId).subscribe({
       next: (data) => (this.batches = data),
       error: (err) =>
         this.logActivity('Failed to fetch batches: ' + err.message),
