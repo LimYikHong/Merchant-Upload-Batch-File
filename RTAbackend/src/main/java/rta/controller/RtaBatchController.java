@@ -145,7 +145,7 @@ public class RtaBatchController {
 
                 logActivity(merchantId, "ENCRYPT_FILE", "File encrypted with AES-256-GCM + RSA: " + fileName);
             } else {
-                // No RSA key found — upload unencrypted (fallback)
+                // No RSA key found â€” upload unencrypted (fallback)
                 minioStorageService.uploadFile(fileName, file);
                 logActivity(merchantId, "UPLOAD_BATCH_UNENCRYPTED",
                         "No RSA key found, uploaded unencrypted: " + fileName);
@@ -312,6 +312,20 @@ public class RtaBatchController {
                 String originalFileName = batch.getOriginalFileName();
                 String merchantId = batch.getMerchantId();
 
+                // If file was encrypted, pack into binary layout expected by RTA_BANK:
+                // [4 bytes encKeyLen][N bytes encryptedAesKey][12 bytes IV][cipherText]
+                if (batch.isEncrypted() && batch.getEncryptedAesKey() != null && batch.getIv() != null) {
+                    byte[] encAesKeyBytes = java.util.Base64.getDecoder().decode(batch.getEncryptedAesKey());
+                    byte[] ivBytes = java.util.Base64.getDecoder().decode(batch.getIv());
+                    java.nio.ByteBuffer packedBuf = java.nio.ByteBuffer.allocate(
+                            4 + encAesKeyBytes.length + ivBytes.length + fileBytes.length);
+                    packedBuf.putInt(encAesKeyBytes.length);
+                    packedBuf.put(encAesKeyBytes);
+                    packedBuf.put(ivBytes);
+                    packedBuf.put(fileBytes);
+                    fileBytes = packedBuf.array();
+                }
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 String filePart = "--" + boundary + "\r\n"
                         + "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n"
@@ -339,26 +353,12 @@ public class RtaBatchController {
                     baos.write(originalFileNamePart.getBytes());
                 }
 
-                // Include encryption metadata if file was encrypted
+                // Include encrypted flag so RTA_BANK knows to decrypt
                 if (batch.isEncrypted()) {
                     String encryptedPart = "--" + boundary + "\r\n"
                             + "Content-Disposition: form-data; name=\"encrypted\"\r\n\r\n"
                             + "true\r\n";
                     baos.write(encryptedPart.getBytes());
-
-                    if (batch.getEncryptedAesKey() != null) {
-                        String aesKeyPart = "--" + boundary + "\r\n"
-                                + "Content-Disposition: form-data; name=\"encryptedAesKey\"\r\n\r\n"
-                                + batch.getEncryptedAesKey() + "\r\n";
-                        baos.write(aesKeyPart.getBytes());
-                    }
-
-                    if (batch.getIv() != null) {
-                        String ivPart = "--" + boundary + "\r\n"
-                                + "Content-Disposition: form-data; name=\"iv\"\r\n\r\n"
-                                + batch.getIv() + "\r\n";
-                        baos.write(ivPart.getBytes());
-                    }
                 }
 
                 baos.write(("--" + boundary + "--\r\n").getBytes());

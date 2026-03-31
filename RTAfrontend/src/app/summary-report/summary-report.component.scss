@@ -1,0 +1,146 @@
+/* Component-specific styles only — shared sidebar/layout/logout in global styles.css */
+
+.merchant-info {
+    margin-bottom: 15px;
+    line-height: 1.5;
+    color: #475569;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+    p:first-child {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    p:last-child {
+        font-size: 14px;
+        color: #94a3b8;
+    }
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+th,
+td {
+    padding: 10px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+th {
+    background-color: #e2e8f0;
+}
+
+button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-blue {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-blue:hover {
+    background-color: #2563eb;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-success {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-warning {
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+
+.status-error {
+    background-color: #fecaca;
+    color: #991b1b;
+}
+
+.status-default {
+    background-color: #e2e8f0;
+    color: #475569;
+}
+
+.text-success {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.text-error {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Report detail panel */
+.report-detail {
+    margin-top: 25px;
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #3b82f6;
+
+    h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #1e293b;
+    }
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+    span {
+        font-size: 14px;
+        color: #1e293b;
+    }
+
+    &.full-width {
+        grid-column: 1 / -1;
+    }
+}
