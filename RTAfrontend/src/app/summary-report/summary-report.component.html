@@ -1,0 +1,137 @@
+<div class="profile-container">
+  <aside class="sidebar">
+    <h2>RTA Merchant Upload</h2>
+    <ul>
+      <li routerLink="/batch-list" routerLinkActive="active">
+        <b>Upload Batch File</b>
+      </li>
+      <li routerLink="/summary-report" routerLinkActive="active">
+        <b>Summary Report</b>
+      </li>
+      <li routerLink="/profile" routerLinkActive="active">
+        <b>View Profile</b>
+      </li>
+    </ul>
+  </aside>
+
+  <button class="logout-btn" (click)="logout()">Logout</button>
+
+  <main class="profile-content">
+    <h1>Bank Summary Reports</h1>
+
+    <div class="merchant-info">
+      <p>🧾 Merchant ID: <b>{{ merchant?.merchantId }}</b></p>
+      <p>🏢 Company: <b>{{ merchant?.company }}</b></p>
+      <p>👤 Name: <b>{{ merchant?.name }}</b></p>
+    </div>
+
+    <div *ngIf="reports.length === 0" class="empty-state">
+      <p>📭 No summary reports received from the bank yet.</p>
+      <p>Reports will appear here once the bank processes your uploaded batch files.</p>
+    </div>
+
+    <table *ngIf="reports.length > 0">
+      <thead>
+        <tr>
+          <th>File Name</th>
+          <th>Bank Status</th>
+          <th>Total Txn</th>
+          <th>Success</th>
+          <th>Failed</th>
+          <th>Total Amount</th>
+          <th>Bank Ref</th>
+          <th>Received At</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let report of reports">
+          <td>{{ report.originalFileName || report.fileName }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(report.bankStatus)">
+              {{ report.bankStatus }}
+            </span>
+          </td>
+          <td>{{ report.totalTransactions ?? '-' }}</td>
+          <td>{{ report.successfulTransactions ?? '-' }}</td>
+          <td>{{ report.failedTransactions ?? '-' }}</td>
+          <td>{{ report.totalAmount != null ? (report.totalAmount | number:'1.2-2') : '-' }}
+              {{ report.currency || '' }}</td>
+          <td>{{ report.bankReference || '-' }}</td>
+          <td>{{ report.receivedAt | date:'short' }}</td>
+          <td>
+            <button class="btn-blue" (click)="viewDetails(report)">
+              {{ selectedReport?.id === report.id ? 'Hide' : 'Details' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Detail panel for selected report -->
+    <div *ngIf="selectedReport" class="report-detail">
+      <h3>📋 Report Details — {{ selectedReport.originalFileName || selectedReport.fileName }}</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Report ID</label>
+          <span>{{ selectedReport.id }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Batch ID</label>
+          <span>{{ selectedReport.batchId ?? 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Merchant ID</label>
+          <span>{{ selectedReport.merchantId }}</span>
+        </div>
+        <div class="detail-item">
+          <label>File Name</label>
+          <span>{{ selectedReport.fileName }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Original File Name</label>
+          <span>{{ selectedReport.originalFileName || 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Bank Status</label>
+          <span class="status-badge" [ngClass]="getStatusClass(selectedReport.bankStatus)">
+            {{ selectedReport.bankStatus }}
+          </span>
+        </div>
+        <div class="detail-item">
+          <label>Total Transactions</label>
+          <span>{{ selectedReport.totalTransactions ?? 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Successful</label>
+          <span class="text-success">{{ selectedReport.successfulTransactions ?? 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Failed</label>
+          <span class="text-error">{{ selectedReport.failedTransactions ?? 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Total Amount</label>
+          <span>{{ selectedReport.totalAmount != null ? (selectedReport.totalAmount | number:'1.2-2') : 'N/A' }}
+                {{ selectedReport.currency || '' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Bank Reference</label>
+          <span>{{ selectedReport.bankReference || 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Processed At</label>
+          <span>{{ selectedReport.processedAt ? (selectedReport.processedAt | date:'medium') : 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Received At</label>
+          <span>{{ selectedReport.receivedAt | date:'medium' }}</span>
+        </div>
+        <div class="detail-item full-width" *ngIf="selectedReport.remarks">
+          <label>Remarks</label>
+          <span>{{ selectedReport.remarks }}</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

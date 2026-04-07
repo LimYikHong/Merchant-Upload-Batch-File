@@ -105,7 +105,18 @@
     <artifactId>flyway-mysql</artifactId>
 </dependency>
 
+		<!-- Kafka consumer -->
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
 
+		<!-- MinIO client for object storage -->
+		<dependency>
+			<groupId>io.minio</groupId>
+			<artifactId>minio</artifactId>
+			<version>8.5.7</version>
+		</dependency>
 
 	</dependencies>
 

@@ -34,5 +34,10 @@ CREATE TABLE rta_user (
     company VARCHAR(255),
     contact VARCHAR(255),
     joined_on DATETIME,
-    profile_photo_url VARCHAR(255)
+    profile_photo_url VARCHAR(255),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    create_by VARCHAR(100),
+    last_modified_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+    last_modified_by VARCHAR(100),
+    deleted_at DATETIME
 );

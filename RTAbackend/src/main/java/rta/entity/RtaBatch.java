@@ -32,4 +32,13 @@ public class RtaBatch {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "encrypted", nullable = false)
+    private boolean encrypted = false;
+
+    @Column(name = "encrypted_aes_key", columnDefinition = "TEXT")
+    private String encryptedAesKey;
+
+    @Column(name = "iv")
+    private String iv;
 }

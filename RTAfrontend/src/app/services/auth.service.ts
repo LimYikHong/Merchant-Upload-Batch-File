@@ -13,7 +13,7 @@ import { MerchantProfile } from './profile.service';
  * - Stores the authenticated merchant in localStorage under 'merchant'.
  */
 export class AuthService {
-  private apiUrl = 'http://localhost:8088/api/auth';
+  private apiUrl = 'https://localhost:8088/api/auth';
 
   constructor(private http: HttpClient) {}
 

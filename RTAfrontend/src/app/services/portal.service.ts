@@ -16,6 +16,24 @@ export interface RtaBatch {
   createdAt?: string;
 }
 
+export interface BankSummaryReport {
+  id?: number;
+  batchId?: number;
+  merchantId: string;
+  fileName: string;
+  originalFileName?: string;
+  bankStatus: string;
+  totalTransactions?: number;
+  successfulTransactions?: number;
+  failedTransactions?: number;
+  totalAmount?: number;
+  currency?: string;
+  bankReference?: string;
+  remarks?: string;
+  processedAt?: string;
+  receivedAt?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -26,19 +44,26 @@ export interface RtaBatch {
  * - Keeps API URLs centralized and easy to change.
  */
 export class PortalService {
-  private apiUrl = 'http://localhost:8088/api/batches';
+  private apiUrl = 'https://localhost:8088/api/batches';
+  private reportsUrl = 'https://localhost:8088/api/reports';
 
   constructor(private http: HttpClient) {}
   /**
-   * GET /api/batches
-   * - Fetch all batches (optionally filtered by backend auth/user).
+   * GET /api/batches?merchantId=xxx
+   * - Fetch batches for the current merchant.
    */
-  getBatches(): Observable<RtaBatch[]> {
-    return this.http.get<RtaBatch[]>(this.apiUrl);
+  getBatches(merchantId?: string): Observable<RtaBatch[]> {
+    const params = merchantId ? `?merchantId=${merchantId}` : '';
+    return this.http.get<RtaBatch[]>(`${this.apiUrl}${params}`);
   }
 
-  getActivityLogs(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/activity`);
+  /**
+   * GET /api/batches/activity?merchantId=xxx
+   * - Fetch activity logs for the current merchant.
+   */
+  getActivityLogs(merchantId?: string): Observable<string[]> {
+    const params = merchantId ? `?merchantId=${merchantId}` : '';
+    return this.http.get<string[]>(`${this.apiUrl}/activity${params}`);
   }
   /**
    * POST /api/batches/upload
@@ -83,5 +108,22 @@ export class PortalService {
    */
   deleteBatch(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * GET /api/reports?merchantId=xxx
+   * - Fetch bank summary reports for the current merchant.
+   */
+  getSummaryReports(merchantId?: string): Observable<BankSummaryReport[]> {
+    const params = merchantId ? `?merchantId=${merchantId}` : '';
+    return this.http.get<BankSummaryReport[]>(`${this.reportsUrl}${params}`);
+  }
+
+  /**
+   * GET /api/reports/{id}
+   * - Fetch a single report by ID.
+   */
+  getSummaryReportById(id: number): Observable<BankSummaryReport> {
+    return this.http.get<BankSummaryReport>(`${this.reportsUrl}/${id}`);
   }
 }
