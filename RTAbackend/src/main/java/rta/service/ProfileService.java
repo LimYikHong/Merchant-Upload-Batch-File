@@ -20,9 +20,8 @@ import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 @Service
 
 /**
- * ProfileService
- * - Handles merchant authentication and profile CRUD.
- * - Stores profile photos on local disk and saves public URL path in DB.
+ * ProfileService - Handles merchant authentication and profile CRUD. - Stores
+ * profile photos on local disk and saves public URL path in DB.
  */
 public class ProfileService {
 
@@ -45,8 +44,8 @@ public class ProfileService {
     }
 
     /**
-     * Authenticate by username/password.
-     * - Throws RuntimeException on user not found or invalid password.
+     * Authenticate by username/password. - Throws RuntimeException on user not
+     * found or invalid password.
      */
     public MerchantProfile login(String username, String password) {
         MerchantProfile profile = profileRepository.findByUsername(username)
@@ -107,8 +106,7 @@ public class ProfileService {
     }
 
     /**
-     * Register a new merchant profile.
-     * - Rejects duplicate usernames.
+     * Register a new merchant profile. - Rejects duplicate usernames.
      */
     public MerchantProfile register(MerchantProfile profile) {
         if (profileRepository.findByUsername(profile.getUsername()).isPresent()) {
@@ -120,8 +118,7 @@ public class ProfileService {
     }
 
     /**
-     * Fetch profile by merchantId.
-     * - Throws if not found.
+     * Fetch profile by merchantId. - Throws if not found.
      */
     public MerchantProfile getProfile(String merchantId) {
         return profileRepository.findByMerchantId(merchantId)
@@ -129,14 +126,13 @@ public class ProfileService {
     }
 
     /**
-     * Update mutable profile fields.
-     * - Copies selected fields from newProfile to existing record.
+     * Update mutable profile fields. - Copies selected fields from newProfile
+     * to existing record.
      */
     public MerchantProfile updateProfile(String merchantId, MerchantProfile newProfile) {
         MerchantProfile existing = profileRepository.findByMerchantId(merchantId)
                 .orElseThrow(() -> new RuntimeException("Merchant profile not found: " + merchantId));
 
-        existing.setName(newProfile.getName());
         existing.setEmail(newProfile.getEmail());
         existing.setCompany(newProfile.getCompany());
         existing.setContact(newProfile.getContact());
@@ -149,9 +145,9 @@ public class ProfileService {
     }
 
     /**
-     * Save profile photo to disk and update profile with a public URL.
-     * - Writes under "uploads/profile-photos" (relative to app working dir).
-     * - Stores "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
+     * Save profile photo to disk and update profile with a public URL. - Writes
+     * under "uploads/profile-photos" (relative to app working dir). - Stores
+     * "/uploads/profile-photos/{uuid.ext}" as profilePhotoUrl.
      */
     public MerchantProfile uploadProfilePhoto(String merchantId, MultipartFile file) {
         MerchantProfile profile = getProfile(merchantId);

@@ -37,13 +37,18 @@ public class MerchantCreatedConsumer {
         } else {
             MerchantProfile profile = new MerchantProfile();
             profile.setMerchantId(event.getMerchantId());
-            profile.setName(event.getName());
+            profile.setName(event.getName() != null ? event.getName() : event.getMerchantId());
             profile.setUsername(event.getUsername() != null ? event.getUsername() : event.getMerchantId());
+            profile.setEmail(event.getEmail());
             profile.setPassword("123456");              // default password, merchant should change
             profile.setAddress(event.getAddress());
             profile.setPhone(event.getPhone());
             profile.setContact(event.getContact());
             profile.setCompany(event.getCompany());
+            profile.setAccountNumber(event.getMerchantAccNum());
+            profile.setAccountName(event.getMerchantAccName());
+            profile.setTransactionCurrency(event.getTransactionCurrency());
+            profile.setSettlementCurrency(event.getSettlementCurrency());
 
             try {
                 profile.setJoinedOn(LocalDateTime.parse(event.getCreatedAt(), DateTimeFormatter.ISO_DATE_TIME));

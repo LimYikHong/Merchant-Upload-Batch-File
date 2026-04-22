@@ -16,7 +16,6 @@ public class MerchantProfile {
     @Column(name = "merchant_id", nullable = false, unique = true)
     private String merchantId;
 
-    @Column(nullable = false)
     private String name;
 
     private String address;
@@ -34,6 +33,18 @@ public class MerchantProfile {
     private String contact;
 
     private LocalDateTime joinedOn;
+
+    @Column(name = "account_number")
+    private String accountNumber;
+
+    @Column(name = "account_name")
+    private String accountName;
+
+    @Column(name = "transaction_currency")
+    private String transactionCurrency;
+
+    @Column(name = "settlement_currency")
+    private String settlementCurrency;
 
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
