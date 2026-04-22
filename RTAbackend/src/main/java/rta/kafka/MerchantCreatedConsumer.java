@@ -55,20 +55,38 @@ public class MerchantCreatedConsumer {
             log.info("Inserted merchant into rta_user: merchantId={}", event.getMerchantId());
         }
 
-        // Save RSA public key if provided in the event (always attempt, even if merchant existed)
+        // Save INBOUND public key (merchant uses this to encrypt batch uploads)
         if (event.getRsaPublicKeyPem() != null && !event.getRsaPublicKeyPem().isEmpty()) {
-            if (rsaKeyRepository.findByMerchantId(event.getMerchantId()).isEmpty()) {
-                MerchantRsaKey rsaKey = new MerchantRsaKey();
-                rsaKey.setMerchantId(event.getMerchantId());
-                rsaKey.setRsaPublicKey(event.getRsaPublicKeyPem());
-                rsaKey.setCreatedAt(LocalDateTime.now());
-                rsaKeyRepository.save(rsaKey);
-                log.info("Saved RSA public key for merchant: {}", event.getMerchantId());
+            if (rsaKeyRepository.findByMerchantIdAndKeyPurpose(event.getMerchantId(), "INBOUND").isEmpty()) {
+                MerchantRsaKey inboundKey = new MerchantRsaKey();
+                inboundKey.setMerchantId(event.getMerchantId());
+                inboundKey.setKeyPurpose("INBOUND");
+                inboundKey.setRsaPublicKey(event.getRsaPublicKeyPem());
+                inboundKey.setCreatedAt(LocalDateTime.now());
+                rsaKeyRepository.save(inboundKey);
+                log.info("Saved INBOUND public key for merchant: {}", event.getMerchantId());
             } else {
-                log.info("RSA key already exists for merchant: {}", event.getMerchantId());
+                log.info("INBOUND key already exists for merchant: {}", event.getMerchantId());
             }
         } else {
-            log.warn("No RSA public key in event for merchant: {}", event.getMerchantId());
+            log.warn("No INBOUND public key in event for merchant: {}", event.getMerchantId());
+        }
+
+        // Save OUTBOUND private key (merchant uses this to decrypt return files from bank)
+        if (event.getRsaOutboundPrivateKeyPem() != null && !event.getRsaOutboundPrivateKeyPem().isEmpty()) {
+            if (rsaKeyRepository.findByMerchantIdAndKeyPurpose(event.getMerchantId(), "OUTBOUND").isEmpty()) {
+                MerchantRsaKey outboundKey = new MerchantRsaKey();
+                outboundKey.setMerchantId(event.getMerchantId());
+                outboundKey.setKeyPurpose("OUTBOUND");
+                outboundKey.setRsaPublicKey(event.getRsaOutboundPrivateKeyPem());
+                outboundKey.setCreatedAt(LocalDateTime.now());
+                rsaKeyRepository.save(outboundKey);
+                log.info("Saved OUTBOUND private key for merchant: {}", event.getMerchantId());
+            } else {
+                log.info("OUTBOUND key already exists for merchant: {}", event.getMerchantId());
+            }
+        } else {
+            log.warn("No OUTBOUND private key in event for merchant: {}", event.getMerchantId());
         }
     }
 }

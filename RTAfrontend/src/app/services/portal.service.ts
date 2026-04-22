@@ -34,6 +34,18 @@ export interface BankSummaryReport {
   receivedAt?: string;
 }
 
+export interface ReturnBatchFile {
+  id?: number;
+  batchId?: number;
+  merchantId: string;
+  originalFileName?: string;
+  returnFileName: string;
+  fileSize?: number;
+  status: string;
+  remarks?: string;
+  receivedAt?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -44,8 +56,9 @@ export interface BankSummaryReport {
  * - Keeps API URLs centralized and easy to change.
  */
 export class PortalService {
-  private apiUrl = 'https://localhost:8088/api/batches';
-  private reportsUrl = 'https://localhost:8088/api/reports';
+  private apiUrl = 'https://localhost:8881/api/batches';
+  private reportsUrl = 'https://localhost:8881/api/reports';
+  private returnBatchesUrl = 'https://localhost:8881/api/return-batches';
 
   constructor(private http: HttpClient) {}
   /**
@@ -125,5 +138,24 @@ export class PortalService {
    */
   getSummaryReportById(id: number): Observable<BankSummaryReport> {
     return this.http.get<BankSummaryReport>(`${this.reportsUrl}/${id}`);
+  }
+
+  /**
+   * GET /api/return-batches?merchantId=xxx
+   * - Fetch return batch files for the current merchant.
+   */
+  getReturnBatches(merchantId?: string): Observable<ReturnBatchFile[]> {
+    const params = merchantId ? `?merchantId=${merchantId}` : '';
+    return this.http.get<ReturnBatchFile[]>(`${this.returnBatchesUrl}${params}`);
+  }
+
+  /**
+   * GET /api/return-batches/{id}/download
+   * - Download a return batch file.
+   */
+  downloadReturnBatch(id: number): Observable<Blob> {
+    return this.http.get(`${this.returnBatchesUrl}/${id}/download`, {
+      responseType: 'blob',
+    });
   }
 }

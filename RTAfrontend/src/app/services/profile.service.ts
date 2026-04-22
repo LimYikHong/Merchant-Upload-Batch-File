@@ -30,7 +30,7 @@ export interface MerchantProfile {
  * - Provides helpers for CRUD-like actions: fetch, update, upload photo
  */
 export class ProfileService {
-  private apiUrl = 'https://localhost:8088/api/profile';
+  private apiUrl = 'https://localhost:8881/api/profile';
   private cachedProfile: MerchantProfile | null = null;
 
   constructor(private http: HttpClient) {}

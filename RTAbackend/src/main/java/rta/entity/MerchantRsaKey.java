@@ -17,8 +17,15 @@ public class MerchantRsaKey {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "merchant_id", nullable = false, unique = true)
+    @Column(name = "merchant_id", nullable = false)
     private String merchantId;
+
+    /**
+     * INBOUND = public key (merchant encrypts uploads with this) OUTBOUND =
+     * private key (merchant decrypts return files with this)
+     */
+    @Column(name = "key_purpose", nullable = false)
+    private String keyPurpose;
 
     @Column(name = "rsa_public_key", nullable = false, columnDefinition = "TEXT")
     private String rsaPublicKey;

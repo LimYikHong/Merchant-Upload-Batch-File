@@ -73,10 +73,10 @@ public class FileEncryptionService {
      * @return EncryptionResult with encrypted file, encrypted AES key, and IV
      */
     public EncryptionResult encryptFile(String merchantId, byte[] plainBytes) throws Exception {
-        // 1. Retrieve merchant's RSA public key
-        MerchantRsaKey rsaKeyEntity = rsaKeyRepository.findByMerchantId(merchantId)
+        // 1. Retrieve merchant's INBOUND RSA public key (used to encrypt uploads)
+        MerchantRsaKey rsaKeyEntity = rsaKeyRepository.findByMerchantIdAndKeyPurpose(merchantId, "INBOUND")
                 .orElseThrow(() -> new RuntimeException(
-                "RSA public key not found for merchant: " + merchantId));
+                "INBOUND RSA public key not found for merchant: " + merchantId));
 
         PublicKey rsaPublicKey = decodePublicKey(rsaKeyEntity.getRsaPublicKey());
 

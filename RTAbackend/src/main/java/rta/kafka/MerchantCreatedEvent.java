@@ -27,5 +27,6 @@ public class MerchantCreatedEvent {
     private String merchantAccName;
     private String transactionCurrency;
     private String settlementCurrency;
-    private String rsaPublicKeyPem;     // RSA public key in PEM format from RTA_BANK
+    private String rsaPublicKeyPem;          // INBOUND public key (merchant uses to encrypt uploads)
+    private String rsaOutboundPrivateKeyPem;  // OUTBOUND private key (merchant uses to decrypt return files)
 }

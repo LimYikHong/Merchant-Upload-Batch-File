@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface MerchantRsaKeyRepository extends JpaRepository<MerchantRsaKey, Long> {
 
     Optional<MerchantRsaKey> findByMerchantId(String merchantId);
+
+    Optional<MerchantRsaKey> findByMerchantIdAndKeyPurpose(String merchantId, String keyPurpose);
 }
