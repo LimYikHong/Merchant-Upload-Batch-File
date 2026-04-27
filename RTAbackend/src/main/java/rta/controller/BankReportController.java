@@ -1,6 +1,8 @@
 package rta.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import rta.entity.BankSummaryReport;
@@ -9,10 +11,10 @@ import rta.entity.RtaBatch;
 import rta.repository.BankSummaryReportRepository;
 import rta.repository.MerchantActivityLogRepository;
 import rta.repository.RtaBatchRepository;
+import rta.service.ReportPdfService;
 
 import java.time.LocalDateTime;
 import java.util.*;
-
 
 @CrossOrigin(originPatterns = {"http://localhost:*", "https://localhost:*"})
 @RestController
@@ -22,13 +24,16 @@ public class BankReportController {
     private final BankSummaryReportRepository reportRepository;
     private final RtaBatchRepository batchRepository;
     private final MerchantActivityLogRepository activityLogRepository;
+    private final ReportPdfService reportPdfService;
 
     public BankReportController(BankSummaryReportRepository reportRepository,
-                                RtaBatchRepository batchRepository,
-                                MerchantActivityLogRepository activityLogRepository) {
+            RtaBatchRepository batchRepository,
+            MerchantActivityLogRepository activityLogRepository,
+            ReportPdfService reportPdfService) {
         this.reportRepository = reportRepository;
         this.batchRepository = batchRepository;
         this.activityLogRepository = activityLogRepository;
+        this.reportPdfService = reportPdfService;
     }
 
     private void logActivity(String merchantId, String type, String description) {
@@ -41,8 +46,8 @@ public class BankReportController {
     }
 
     /**
-     * GET /api/reports?merchantId=xxx
-     * Returns summary reports for a specific merchant, or all reports if no merchantId.
+     * GET /api/reports?merchantId=xxx Returns summary reports for a specific
+     * merchant, or all reports if no merchantId.
      */
     @GetMapping
     public List<BankSummaryReport> getReports(
@@ -54,8 +59,7 @@ public class BankReportController {
     }
 
     /**
-     * GET /api/reports/{id}
-     * Returns a single report by ID.
+     * GET /api/reports/{id} Returns a single report by ID.
      */
     @GetMapping("/{id}")
     public ResponseEntity<BankSummaryReport> getReportById(@PathVariable Long id) {
@@ -65,10 +69,28 @@ public class BankReportController {
     }
 
     /**
-     * POST /api/reports/receive
-     * Endpoint for the bank to push a summary report after processing a batch file.
-     * Accepts JSON payload with batch processing results.
-     * Also updates the corresponding batch status to reflect the bank's result.
+     * GET /api/reports/{id}/pdf Generates and returns a PDF for the given
+     * report.
+     */
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> getReportPdf(@PathVariable Long id) {
+        return reportRepository.findById(id)
+                .map(report -> {
+                    byte[] pdfBytes = reportPdfService.generateReportPdf(report);
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_PDF);
+                    headers.setContentDispositionFormData("inline",
+                            "report_" + report.getId() + ".pdf");
+                    return ResponseEntity.ok().headers(headers).body(pdfBytes);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * POST /api/reports/receive Endpoint for the bank to push a summary report
+     * after processing a batch file. Accepts JSON payload with batch processing
+     * results. Also updates the corresponding batch status to reflect the
+     * bank's result.
      */
     @PostMapping("/receive")
     public ResponseEntity<?> receiveReport(@RequestBody BankSummaryReport incomingReport) {
@@ -97,9 +119,9 @@ public class BankReportController {
 
             logActivity(incomingReport.getMerchantId(), "REPORT_RECEIVED",
                     "Bank summary report received for file: " + incomingReport.getFileName()
-                            + " | Status: " + incomingReport.getBankStatus()
-                            + " | Ref: " + (incomingReport.getBankReference() != null
-                            ? incomingReport.getBankReference() : "N/A"));
+                    + " | Status: " + incomingReport.getBankStatus()
+                    + " | Ref: " + (incomingReport.getBankReference() != null
+                    ? incomingReport.getBankReference() : "N/A"));
 
             return ResponseEntity.ok(Map.of(
                     "message", "Report received successfully",

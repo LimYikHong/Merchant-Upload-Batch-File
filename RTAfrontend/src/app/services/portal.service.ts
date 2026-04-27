@@ -141,6 +141,16 @@ export class PortalService {
   }
 
   /**
+   * GET /api/reports/{id}/pdf
+   * - Get PDF for a report (returns blob).
+   */
+  getReportPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.reportsUrl}/${id}/pdf`, {
+      responseType: 'blob',
+    });
+  }
+
+  /**
    * GET /api/return-batches?merchantId=xxx
    * - Fetch return batch files for the current merchant.
    */

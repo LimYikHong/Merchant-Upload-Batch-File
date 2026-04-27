@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PortalService, BankSummaryReport } from '../services/portal.service';
 import { ProfileService, MerchantProfile } from '../services/profile.service';
 import { AuthService } from '../services/auth.service';
@@ -16,12 +17,16 @@ export class SummaryReportComponent implements OnInit {
   reports: BankSummaryReport[] = [];
   merchant: MerchantProfile | null = null;
   selectedReport: BankSummaryReport | null = null;
+  pdfUrl: SafeResourceUrl | null = null;
+  pdfReportId: number | null = null;
+  loadingPdf = false;
 
   constructor(
     private portalService: PortalService,
     private profileService: ProfileService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -63,5 +68,32 @@ export class SummaryReportComponent implements OnInit {
       case 'REJECTED': return 'status-error';
       default: return 'status-default';
     }
+  }
+
+  viewPdf(report: BankSummaryReport): void {
+    if (this.pdfReportId === report.id) {
+      this.closePdf();
+      return;
+    }
+    this.loadingPdf = true;
+    this.pdfUrl = null;
+    this.pdfReportId = report.id!;
+    this.portalService.getReportPdf(report.id!).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        this.loadingPdf = false;
+      },
+      error: (err) => {
+        console.error('Failed to load PDF', err);
+        this.loadingPdf = false;
+        this.pdfReportId = null;
+      }
+    });
+  }
+
+  closePdf(): void {
+    this.pdfUrl = null;
+    this.pdfReportId = null;
   }
 }

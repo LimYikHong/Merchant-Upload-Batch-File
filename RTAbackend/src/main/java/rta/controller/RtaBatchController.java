@@ -129,7 +129,7 @@ public class RtaBatchController {
             String encryptedAesKey = null;
             String iv = null;
 
-            if (rsaKeyRepository.findByMerchantId(merchantId).isPresent()) {
+            if (rsaKeyRepository.findByMerchantIdAndKeyPurpose(merchantId, "INBOUND").isPresent()) {
                 byte[] plainBytes = file.getBytes();
                 FileEncryptionService.EncryptionResult encResult
                         = fileEncryptionService.encryptFile(merchantId, plainBytes);

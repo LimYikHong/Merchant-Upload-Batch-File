@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  * Stores return/response batch files sent back by the bank after processing.
  */
 @Entity
-@Table(name = "return_batch_files")
+@Table(name = "bank_return_batches")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,9 +19,9 @@ public class ReturnBatchFile {
     private Long id;
 
     /**
-     * The original batch ID this return file corresponds to
+     * Batch ID from bank system (NOT a FK)
      */
-    @Column(name = "batch_id")
+    @Column(name = "bank_batch_id")
     private Long batchId;
 
     @Column(name = "merchant_id", nullable = false)
@@ -44,6 +44,18 @@ public class ReturnBatchFile {
      */
     @Column(name = "file_size")
     private Long fileSize;
+
+    /**
+     * Local path or storage URI of decrypted CSV
+     */
+    @Column(name = "return_file_path")
+    private String returnFilePath;
+
+    /**
+     * Number of transactions in the return file
+     */
+    @Column(name = "transaction_count")
+    private Integer transactionCount;
 
     /**
      * Status: RECEIVED, PROCESSED, ERROR
