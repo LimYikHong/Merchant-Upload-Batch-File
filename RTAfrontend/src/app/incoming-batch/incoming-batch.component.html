@@ -17,7 +17,9 @@
     </ul>
   </aside>
 
-  <button class="logout-btn" (click)="logout()">Logout</button>
+  <button class="logout-btn" (click)="logout()" title="Logout">
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
 
   <main class="profile-content">
     <h1>📥 Return Batch Files</h1>
@@ -60,8 +62,8 @@
           <td>{{ batch.receivedAt | date:'short' }}</td>
           <td>{{ batch.remarks || '-' }}</td>
           <td>
-            <button class="btn-blue" (click)="downloadFile(batch)">
-              ⬇ Download
+            <button class="icon-btn btn-blue" (click)="downloadFile(batch)" title="Download">
+              <i class="fas fa-download"></i>
             </button>
           </td>
         </tr>

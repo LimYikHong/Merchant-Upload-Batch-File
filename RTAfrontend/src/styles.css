@@ -86,3 +86,32 @@ html, body {
 .logout-btn:hover {
     background-color: #dc2626;
 }
+
+/* ── Icon buttons ── */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #1e293b;
+    background: transparent;
+    transition: color 0.2s, transform 0.1s;
+    margin: 0 2px;
+}
+
+.icon-btn:hover {
+    transform: scale(1.15);
+    color: #000;
+}
+
+.icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}

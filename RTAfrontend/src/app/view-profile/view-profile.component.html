@@ -19,7 +19,9 @@
   </aside>
 
   <!-- Profile Content -->
-  <button class="logout-btn" (click)="logout()">Logout</button>
+  <button class="logout-btn" (click)="logout()" title="Logout">
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
   <main class="profile-content" *ngIf="profile; else loading">
     <div class="profile-header">
       <div class="avatar" (click)="openPhotoUpload()">
@@ -46,8 +48,8 @@
       <div class="header-info">
         <h1>{{ profile.name }}</h1>
         <p class="email">{{ profile.email }}</p>
-        <button class="edit-btn" (click)="openEditModal()">
-          Edit Profile
+        <button class="icon-btn edit-btn" (click)="openEditModal()" title="Edit Profile">
+          <i class="fas fa-pencil-alt"></i>
         </button>
       </div>
     </div>

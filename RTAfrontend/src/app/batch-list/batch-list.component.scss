@@ -19,39 +19,7 @@ button {
     cursor: pointer;
 }
 
-.btn-blue {
-    background-color: #3b82f6;
-    color: white;
-}
 
-.btn-blue:hover {
-    background-color: #2563eb;
-}
-
-.btn-green {
-    background-color: #22c55e;
-    color: white;
-    margin-left: 5px;
-}
-
-.btn-green:hover {
-    background-color: #16a34a;
-}
-
-.btn-green:disabled {
-    background-color: #86efac;
-    cursor: not-allowed;
-}
-
-.btn-red {
-    background-color: #ef4444;
-    color: white;
-    margin-left: 5px;
-}
-
-.btn-red:hover {
-    background-color: #dc2626;
-}
 
 table {
     width: 100%;

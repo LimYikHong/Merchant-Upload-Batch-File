@@ -17,7 +17,9 @@
     </ul>
   </aside>
 
-  <button class="logout-btn" (click)="logout()">Logout</button>
+  <button class="logout-btn" (click)="logout()" title="Logout">
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
 
   <main class="profile-content">
     <h1>Uploaded Batches</h1>
@@ -40,7 +42,7 @@
         accept=".xlsx,.xls,.csv,.txt"
         (change)="onFileSelected($event)"
       />
-      <button (click)="uploadBatch()">Upload</button>
+       <button (click)="uploadBatch()">Upload</button>
     </div>
 
     <table>
@@ -63,14 +65,14 @@
           <td>{{ batch.createdBy }}</td>
           <td>{{ batch.createdAt | date : 'short' }}</td>
           <td>
-            <button class="btn-blue" (click)="viewBatch(batch.id!)">
-              View
+            <button class="icon-btn btn-blue" (click)="viewBatch(batch.id!)" title="View">
+              <i class="fas fa-eye"></i>
             </button>
-            <button class="btn-green" (click)="sendToBank(batch.id!)" [disabled]="batch.status === 'SENT_TO_BANK'">
-              {{ batch.status === 'SENT_TO_BANK' ? 'Sent ✓' : 'Send to Bank' }}
+            <button class="icon-btn btn-green" (click)="sendToBank(batch.id!)" [disabled]="batch.status === 'SENT_TO_BANK'" [title]="batch.status === 'SENT_TO_BANK' ? 'Sent' : 'Send to Bank'">
+              <i class="fas" [ngClass]="batch.status === 'SENT_TO_BANK' ? 'fa-check' : 'fa-paper-plane'"></i>
             </button>
-            <button class="btn-red" (click)="deleteBatch(batch.id!)">
-              Delete
+            <button class="icon-btn btn-red" (click)="deleteBatch(batch.id!)" title="Delete">
+              <i class="fas fa-trash"></i>
             </button>
           </td>
         </tr>

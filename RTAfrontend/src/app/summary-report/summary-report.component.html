@@ -17,7 +17,9 @@
     </ul>
   </aside>
 
-  <button class="logout-btn" (click)="logout()">Logout</button>
+  <button class="logout-btn" (click)="logout()" title="Logout">
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
 
   <main class="profile-content">
     <h1>Bank Summary Reports</h1>
@@ -63,11 +65,11 @@
           <td>{{ report.bankReference || '-' }}</td>
           <td>{{ report.receivedAt | date:'short' }}</td>
           <td>
-            <button class="btn-blue" (click)="viewDetails(report)">
-              {{ selectedReport?.id === report.id ? 'Hide' : 'Details' }}
+            <button class="icon-btn btn-blue" (click)="viewDetails(report)" [title]="selectedReport?.id === report.id ? 'Hide Details' : 'View Details'">
+              <i class="fas" [ngClass]="selectedReport?.id === report.id ? 'fa-eye-slash' : 'fa-info-circle'"></i>
             </button>
-            <button class="btn-pdf" (click)="viewPdf(report)" style="margin-left: 6px;">
-              {{ pdfReportId === report.id ? 'Close PDF' : '📄 PDF' }}
+            <button class="icon-btn btn-pdf" (click)="viewPdf(report)" [title]="pdfReportId === report.id ? 'Close PDF' : 'View PDF'" style="margin-left: 6px;">
+              <i class="fas fa-file-pdf"></i>
             </button>
           </td>
         </tr>
@@ -147,7 +149,9 @@
     <div *ngIf="pdfUrl" class="pdf-viewer">
       <div class="pdf-header">
         <h3>📄 Report PDF Preview</h3>
-        <button class="btn-close" (click)="closePdf()">✕ Close</button>
+        <button class="icon-btn btn-close" (click)="closePdf()" title="Close PDF">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
       <iframe [src]="pdfUrl" width="100%" height="600px" style="border: none; border-radius: 6px;"></iframe>
     </div>
