@@ -81,21 +81,21 @@ If successful, the frontend will start at:
 
 ## Step 3: Login Account
 
-Default test account:  
-- **Username:** merchant1  
-- **Password:** 123456  
+The user account should only be created from the main system https://github.com/LimYikHong/RTA_BANK
 
 After login, you can (CRUD implementation):
-- Upload `.xlsx`, `.csv`, or `.txt` batch files  and delete uploaded bacth file (Create and Delete)
+- Upload `.xlsx`, `.csv`, or `.txt` batch files and delete the upload batch file (the batch file hasn't been uploaded)
 - View uploaded batches and logs  (Read)
 - Edit merchant profile information  (Update)
+- Get return report from main system
 
 ---
 
 
 # Future Enhancements
 
-- Add RSA and AES encryption for automatic file encryption during upload  
-- Integrate key management and secure storage  
+- A more user-friendly UI design
+- Integrate with the AI chat box
+- Chat channel with the main system
 
 ---
